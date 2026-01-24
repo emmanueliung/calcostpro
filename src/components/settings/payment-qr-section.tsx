@@ -28,6 +28,8 @@ export function PaymentQrSection() {
         return () => unsubscribe();
     }, [user, db]);
 
+    if (!user) return null;
+
     const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file || !user) return;

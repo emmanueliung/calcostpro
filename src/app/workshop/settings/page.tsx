@@ -14,11 +14,23 @@ import { Trash2, Plus, Edit, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PublicLinkSection } from '@/components/settings/public-link-section';
 import { PaymentQrSection } from '@/components/settings/payment-qr-section';
+import { Header } from '@/components/header';
+import { Loader } from '@/components/ui/loader';
+import { useRouter } from 'next/navigation';
 
 export default function WorkshopSettingsPage() {
-    const { user } = useUser();
+    const { user, isUserLoading } = useUser();
     const db = useFirestore();
+    const router = useRouter();
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (isUserLoading) return;
+        if (!user) {
+            router.push('/login');
+        }
+    }, [isUserLoading, user, router]);
+
     const [colleges, setColleges] = useState<College[]>([]);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
 
@@ -130,157 +142,164 @@ export default function WorkshopSettingsPage() {
         }
     };
 
+    if (isUserLoading || !user) {
+        return <Loader text="Cargando configuración..." />;
+    }
+
     return (
-        <div className="container mx-auto p-6 space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold">Configuración de Taller</h1>
-                    <p className="text-muted-foreground">Gestiona tus listas de precios por colegio/curso.</p>
-                </div>
-                <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                    <DialogTrigger asChild>
-                        <Button><Plus className="mr-2 h-4 w-4" /> Nueva Lista</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader><DialogTitle>Registrar Nueva Lista</DialogTitle></DialogHeader>
-                        <div className="py-4 space-y-4">
-                            <div className="space-y-2">
-                                <Label>Nombre del Colegio / Lista</Label>
-                                <Input value={newCollegeName} onChange={e => setNewCollegeName(e.target.value)} placeholder="Ej: La Salle" />
+        <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-1 container mx-auto p-6 space-y-6">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold">Configuración de Taller</h1>
+                        <p className="text-muted-foreground">Gestiona tus listas de precios por colegio/curso.</p>
+                    </div>
+                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                        <DialogTrigger asChild>
+                            <Button><Plus className="mr-2 h-4 w-4" /> Nueva Lista</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader><DialogTitle>Registrar Nueva Lista</DialogTitle></DialogHeader>
+                            <div className="py-4 space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Nombre del Colegio / Lista</Label>
+                                    <Input value={newCollegeName} onChange={e => setNewCollegeName(e.target.value)} placeholder="Ej: La Salle" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Curso (Opcional)</Label>
+                                    <Input value={newCollegeCourse} onChange={e => setNewCollegeCourse(e.target.value)} placeholder="Ej: Promo 2026, 6to B..." />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label>Curso (Opcional)</Label>
-                                <Input value={newCollegeCourse} onChange={e => setNewCollegeCourse(e.target.value)} placeholder="Ej: Promo 2026, 6to B..." />
+                            <DialogFooter><Button onClick={handleCreateCollege}>Guardar</Button></DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+
+                {/* Payment QR Configuration Section */}
+                <PaymentQrSection />
+
+                {/* Public Order Link Section */}
+                <PublicLinkSection />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {colleges.map(college => (
+                        <Card key={college.id} className="relative flex flex-col">
+                            <CardHeader className="pb-2">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <CardTitle className="text-lg">{college.name}</CardTitle>
+                                        {college.course && <CardDescription className="text-sm font-semibold text-primary">{college.course}</CardDescription>}
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => openEditDialog(college)}>
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDeleteList(college.id)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="flex-1 text-sm">
+                                <p className="text-muted-foreground mb-2">{(college.priceList?.length || 0)} artículos configurados</p>
+                                <div className="space-y-1">
+                                    {college.priceList?.slice(0, 3).map((item, i) => (
+                                        <div key={i} className="flex justify-between text-muted-foreground">
+                                            <span>{item.name}</span>
+                                            <span>{item.price} Bs</span>
+                                        </div>
+                                    ))}
+                                    {(college.priceList?.length || 0) > 3 && <p className="text-xs italic text-muted-foreground">... y más</p>}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+
+                {/* Edit Dialog */}
+                <Dialog open={!!editingCollege} onOpenChange={(open) => !open && setEditingCollege(null)}>
+                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                        <DialogHeader>
+                            <DialogTitle>Editar Lista de Precios</DialogTitle>
+                        </DialogHeader>
+
+                        {/* Header Editing Section */}
+                        <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                            <div className="space-y-1">
+                                <Label>Colegio / Grupo</Label>
+                                <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                            </div>
+                            <div className="space-y-1">
+                                <Label>Curso</Label>
+                                <div className="flex gap-2">
+                                    <Input value={editCourse} onChange={(e) => setEditCourse(e.target.value)} />
+                                    <Button size="icon" onClick={handleUpdateListDetails} title="Guardar Cambios de Nombre/Curso">
+                                        <Save className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
-                        <DialogFooter><Button onClick={handleCreateCollege}>Guardar</Button></DialogFooter>
+
+                        {/* Price List Section */}
+                        <div className="flex-1 overflow-hidden flex flex-col mt-2">
+                            <Label className="mb-2">Agregar Prenda o Artículo</Label>
+                            <div className="flex gap-2 items-end mb-4 bg-muted/50 p-3 rounded-lg">
+                                <div className="flex-1 space-y-1">
+                                    <Label className="text-xs">Nombre</Label>
+                                    <Input placeholder="Ej: Pantalon" value={newItemName} onChange={e => setNewItemName(e.target.value)} />
+                                </div>
+                                <div className="w-24 space-y-1">
+                                    <Label className="text-xs">Precio</Label>
+                                    <Input type="number" placeholder="0" value={newItemPrice} onChange={e => setNewItemPrice(e.target.value)} />
+                                </div>
+                                <Button onClick={handleAddItem}><Plus className="h-4 w-4" /></Button>
+                            </div>
+
+                            <div className="border rounded-md flex-1 overflow-y-auto min-h-[200px]">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Prenda</TableHead>
+                                            <TableHead className="text-right">Precio</TableHead>
+                                            <TableHead className="w-[50px]"></TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {editingCollege?.priceList?.map((item, idx) => (
+                                            <TableRow key={idx}>
+                                                <TableCell>{item.name}</TableCell>
+                                                <TableCell className="text-right">{item.price} Bs</TableCell>
+                                                <TableCell>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveItem(idx)}>
+                                                        <Trash2 className="h-3 w-3" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                        {(!editingCollege?.priceList || editingCollege.priceList.length === 0) && (
+                                            <TableRow>
+                                                <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
+                                                    No hay precios configurados.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                        {(editingCollege?.priceList && editingCollege.priceList.length > 0) && (
+                                            <TableRow className="bg-muted/50 font-bold">
+                                                <TableCell>Total</TableCell>
+                                                <TableCell className="text-right">
+                                                    {editingCollege.priceList.reduce((acc, item) => acc + item.price, 0)} Bs
+                                                </TableCell>
+                                                <TableCell></TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
                     </DialogContent>
                 </Dialog>
-            </div>
-
-            {/* Payment QR Configuration Section */}
-            <PaymentQrSection />
-
-            {/* Public Order Link Section */}
-            <PublicLinkSection />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {colleges.map(college => (
-                    <Card key={college.id} className="relative flex flex-col">
-                        <CardHeader className="pb-2">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <CardTitle className="text-lg">{college.name}</CardTitle>
-                                    {college.course && <CardDescription className="text-sm font-semibold text-primary">{college.course}</CardDescription>}
-                                </div>
-                                <div className="flex gap-1">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => openEditDialog(college)}>
-                                        <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDeleteList(college.id)}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="flex-1 text-sm">
-                            <p className="text-muted-foreground mb-2">{(college.priceList?.length || 0)} artículos configurados</p>
-                            <div className="space-y-1">
-                                {college.priceList?.slice(0, 3).map((item, i) => (
-                                    <div key={i} className="flex justify-between text-muted-foreground">
-                                        <span>{item.name}</span>
-                                        <span>{item.price} Bs</span>
-                                    </div>
-                                ))}
-                                {(college.priceList?.length || 0) > 3 && <p className="text-xs italic text-muted-foreground">... y más</p>}
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-
-            {/* Edit Dialog */}
-            <Dialog open={!!editingCollege} onOpenChange={(open) => !open && setEditingCollege(null)}>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-                    <DialogHeader>
-                        <DialogTitle>Editar Lista de Precios</DialogTitle>
-                    </DialogHeader>
-
-                    {/* Header Editing Section */}
-                    <div className="grid grid-cols-2 gap-4 border-b pb-4">
-                        <div className="space-y-1">
-                            <Label>Colegio / Grupo</Label>
-                            <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
-                        </div>
-                        <div className="space-y-1">
-                            <Label>Curso</Label>
-                            <div className="flex gap-2">
-                                <Input value={editCourse} onChange={(e) => setEditCourse(e.target.value)} />
-                                <Button size="icon" onClick={handleUpdateListDetails} title="Guardar Cambios de Nombre/Curso">
-                                    <Save className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Price List Section */}
-                    <div className="flex-1 overflow-hidden flex flex-col mt-2">
-                        <Label className="mb-2">Agregar Prenda o Artículo</Label>
-                        <div className="flex gap-2 items-end mb-4 bg-muted/50 p-3 rounded-lg">
-                            <div className="flex-1 space-y-1">
-                                <Label className="text-xs">Nombre</Label>
-                                <Input placeholder="Ej: Pantalon" value={newItemName} onChange={e => setNewItemName(e.target.value)} />
-                            </div>
-                            <div className="w-24 space-y-1">
-                                <Label className="text-xs">Precio</Label>
-                                <Input type="number" placeholder="0" value={newItemPrice} onChange={e => setNewItemPrice(e.target.value)} />
-                            </div>
-                            <Button onClick={handleAddItem}><Plus className="h-4 w-4" /></Button>
-                        </div>
-
-                        <div className="border rounded-md flex-1 overflow-y-auto min-h-[200px]">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Prenda</TableHead>
-                                        <TableHead className="text-right">Precio</TableHead>
-                                        <TableHead className="w-[50px]"></TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {editingCollege?.priceList?.map((item, idx) => (
-                                        <TableRow key={idx}>
-                                            <TableCell>{item.name}</TableCell>
-                                            <TableCell className="text-right">{item.price} Bs</TableCell>
-                                            <TableCell>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveItem(idx)}>
-                                                    <Trash2 className="h-3 w-3" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                    {(!editingCollege?.priceList || editingCollege.priceList.length === 0) && (
-                                        <TableRow>
-                                            <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
-                                                No hay precios configurados.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                    {(editingCollege?.priceList && editingCollege.priceList.length > 0) && (
-                                        <TableRow className="bg-muted/50 font-bold">
-                                            <TableCell>Total</TableCell>
-                                            <TableCell className="text-right">
-                                                {editingCollege.priceList.reduce((acc, item) => acc + item.price, 0)} Bs
-                                            </TableCell>
-                                            <TableCell></TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            </main>
         </div>
     );
 }
