@@ -16,11 +16,14 @@ export function PublicLinkSection() {
     const { user } = useUser();
     const { toast } = useToast();
     const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+    const [publicUrl, setPublicUrl] = useState<string>('');
     const [copied, setCopied] = useState(false);
 
-    const publicUrl = user
-        ? `${window.location.origin}/order/${user.uid}`
-        : '';
+    useEffect(() => {
+        if (user && typeof window !== 'undefined') {
+            setPublicUrl(`${window.location.origin}/order/${user.uid}`);
+        }
+    }, [user]);
 
     useEffect(() => {
         if (publicUrl) {

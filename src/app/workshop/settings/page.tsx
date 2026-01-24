@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Trash2, Plus, Edit, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PublicLinkSection } from '@/components/settings/public-link-section';
+import { PaymentQrSection } from '@/components/settings/payment-qr-section';
 
 export default function WorkshopSettingsPage() {
     const { user } = useUser();
@@ -156,6 +157,9 @@ export default function WorkshopSettingsPage() {
                     </DialogContent>
                 </Dialog>
             </div>
+
+            {/* Payment QR Configuration Section */}
+            <PaymentQrSection />
 
             {/* Public Order Link Section */}
             <PublicLinkSection />
