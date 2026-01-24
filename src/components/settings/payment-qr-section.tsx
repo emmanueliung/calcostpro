@@ -87,10 +87,10 @@ export function PaymentQrSection() {
             <CardHeader className="pb-3 bg-primary/5">
                 <div className="flex items-center gap-2">
                     <QrCode className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-xl">Código QR de Pago (Bancario)</CardTitle>
+                    <CardTitle className="text-xl">Configuración de Cobro (Tu QR Bancario)</CardTitle>
                 </div>
                 <CardDescription>
-                    Sube el QR de tu banco o Tigo Money para que tus clientes puedan pagarte directamente al hacer pedidos en línea.
+                    Sube el código QR de tu banco o Tigo Money. Este es el QR que tus clientes escanearán para pagarte.
                 </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -133,7 +133,7 @@ export function PaymentQrSection() {
                     </div>
 
                     <div className="w-full md:w-64 flex flex-col items-center gap-4">
-                        <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Vista Previa</Label>
+                        <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Tu QR de Banco (Pago)</Label>
                         <div className="relative aspect-square w-full max-w-[200px] bg-white border-2 border-dashed rounded-xl flex items-center justify-center overflow-hidden shadow-inner group">
                             {savedQrCode ? (
                                 <>

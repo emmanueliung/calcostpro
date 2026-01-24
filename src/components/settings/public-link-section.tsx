@@ -106,7 +106,7 @@ export function PublicLinkSection() {
 
                 {/* QR Code */}
                 <div className="space-y-3">
-                    <Label>Código QR del Enlace</Label>
+                    <Label className="text-primary font-bold">QR de Entrada a tu Tienda (Para Clientes)</Label>
                     <div className="flex flex-col md:flex-row gap-4 items-start">
                         {qrCodeDataUrl && (
                             <div className="bg-white p-4 border rounded-lg shadow-sm">
@@ -138,7 +138,7 @@ export function PublicLinkSection() {
                                     className="w-full"
                                 >
                                     <QrCodeIcon className="h-4 w-4 mr-2" />
-                                    Descargar QR Code
+                                    Descargar QR de la Tienda
                                 </Button>
 
                                 <Button

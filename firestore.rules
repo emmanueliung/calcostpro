@@ -59,7 +59,8 @@ service cloud.firestore {
     }
 
     match /settings/{settingId} {
-        allow read, write: if request.auth != null;
+        allow read: if true;
+        allow write: if request.auth != null;
     }
 
     // --- PUBLIC ORDER RULES ---
@@ -76,8 +77,12 @@ service cloud.firestore {
         allow create: if request.resource.data.keys().hasAll(['userId', 'customer', 'college', 'items', 'totalAmount', 'status']) &&
                          request.resource.data.status == 'pending_payment';
         
-        // Owner can read, update, delete their public orders
-        allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+        // Owner/Admin can manage their public orders
+        allow read, write: if request.auth != null && (
+            resource == null || // Allow listing (where userId filter matches)
+            resource.data.userId == request.auth.uid || 
+            request.auth.uid == '0etArrk91fRW10lxIWmI1QLS9Vo2'
+        );
         
         // Customer can read their own order by ID (for confirmation page)
         allow get: if true;

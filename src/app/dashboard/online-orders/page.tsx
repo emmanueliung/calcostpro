@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { collection, query, where, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { PublicOrder, PublicOrderStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OnlineOrdersTable } from '@/components/dashboard/online-orders-table';
-import { Loader2, ShoppingBag } from 'lucide-react';
+import { Loader2, ShoppingBag, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function OnlineOrdersPage() {
     const { user } = useUser();
@@ -19,44 +21,57 @@ export default function OnlineOrdersPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<PublicOrderStatus | 'all'>('pending_payment');
 
+    const [error, setError] = useState<string | null>(null);
+
     useEffect(() => {
         if (!user) return;
 
-        const fetchOrders = async () => {
-            try {
-                const q = query(
-                    collection(db, 'public_orders'),
-                    where('userId', '==', user.uid),
-                    orderBy('createdAt', 'desc')
-                );
+        const q = query(
+            collection(db, 'public_orders'),
+            where('userId', '==', user.uid)
+        );
 
-                const snapshot = await getDocs(q);
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            try {
                 const ordersData = snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
-                } as PublicOrder));
+                } as PublicOrder)).sort((a, b) => {
+                    const getTime = (timestamp: any) => {
+                        if (!timestamp) return 0;
+                        if (timestamp.toDate) return timestamp.toDate().getTime();
+                        return new Date(timestamp).getTime() || 0;
+                    };
+                    return getTime(b.createdAt) - getTime(a.createdAt);
+                });
 
                 setOrders(ordersData);
-            } catch (error) {
-                console.error('Error fetching orders:', error);
-                toast({
-                    variant: 'destructive',
-                    title: 'Error',
-                    description: 'No se pudieron cargar las commandes.'
-                });
+                setError(null);
+            } catch (err) {
+                console.error('Error processing orders:', err);
+                setError('Error al procesar los datos de las commandes.');
             } finally {
                 setLoading(false);
             }
-        };
+        }, (err) => {
+            console.error('Error fetching orders:', err);
+            setError(`No se pudieron cargar las commandes: ${err.message}`);
+            setLoading(false);
+            toast({
+                variant: 'destructive',
+                title: 'Error de conexión',
+                description: 'No tienes permisos o hubo un error al conectar con la base de datos.'
+            });
+        });
 
-        fetchOrders();
+        return () => unsubscribe();
     }, [user, db, toast]);
 
     const handleStatusChange = async (orderId: string, newStatus: PublicOrderStatus) => {
         try {
             await updateDoc(doc(db, 'public_orders', orderId), {
                 status: newStatus,
-                updatedAt: new Date()
+                updatedAt: serverTimestamp()
             });
 
             setOrders(orders.map(order =>
@@ -90,6 +105,25 @@ export default function OnlineOrdersPage() {
         return (
             <div className="flex items-center justify-center h-96">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-6">
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+                <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => window.location.reload()}
+                >
+                    Reintentar
+                </Button>
             </div>
         );
     }
