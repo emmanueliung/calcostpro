@@ -45,6 +45,7 @@ const PREMIUM_FEATURES = [
 
 const ENTERPRISE_FEATURES = [
     { text: 'Toutes les fonctionnalités Premium', included: true },
+    { text: "Module de gestion de l'atelier (Guichet)", included: true },
     { text: 'Analyse de rentabilité par projet', included: true },
     { text: 'Support technique dédié', included: true },
     { text: 'Accès multi-utilisateurs (bientôt)', included: true },
@@ -87,7 +88,7 @@ export default function SubscriptionPage() {
 
         const codesRef = collection(db, 'bonusCodes');
         const q = query(codesRef, where('code', '==', bonusCode.trim()));
-        
+
         try {
             const querySnapshot = await getDocs(q);
 
@@ -126,7 +127,7 @@ export default function SubscriptionPage() {
             });
 
             await batch.commit();
-            
+
             toast({
                 title: '¡Felicidades!',
                 description: `Has activado el plan Premium por ${codeData.durationDays} días.`
@@ -180,15 +181,15 @@ export default function SubscriptionPage() {
                         <CardContent className="flex flex-col sm:flex-row gap-4 items-end">
                             <div className="w-full space-y-2">
                                 <Label htmlFor="bonus-code">Código Bonus</Label>
-                                <Input 
-                                    id="bonus-code" 
-                                    placeholder="XXXX-XXXX-XXXX" 
+                                <Input
+                                    id="bonus-code"
+                                    placeholder="XXXX-XXXX-XXXX"
                                     value={bonusCode}
                                     onChange={(e) => setBonusCode(e.target.value)}
                                     disabled={isRedeeming}
                                 />
                             </div>
-                            <Button 
+                            <Button
                                 className="w-full sm:w-auto"
                                 onClick={handleRedeemCode}
                                 disabled={isRedeeming}
@@ -226,7 +227,7 @@ export default function SubscriptionPage() {
 
                         {/* Plan Premium */}
                         <Card className={currentPlan === 'Premium' ? 'border-primary border-2 shadow-lg' : 'border-muted'}>
-                             <CardHeader>
+                            <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-2xl">Premium</CardTitle>
                                     {currentPlan === 'Premium' && <Badge variant="default">Plan Actual</Badge>}
@@ -254,10 +255,10 @@ export default function SubscriptionPage() {
                                 )}
                             </CardContent>
                         </Card>
-                        
+
                         {/* Plan Entreprise */}
                         <Card className={currentPlan === 'Entreprise' ? 'border-primary border-2' : 'border-muted'}>
-                             <CardHeader>
+                            <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-2xl">Entreprise</CardTitle>
                                     {currentPlan === 'Entreprise' && <Badge variant="default">Plan Actual</Badge>}

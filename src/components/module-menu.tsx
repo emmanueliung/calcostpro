@@ -13,9 +13,19 @@ import {
 import { LayoutGrid, Scissors, ClipboardList, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/firebase";
+
+const ENTERPRISE_USERS = [
+    'emmanuel.iung@gmail.com',
+    'creacionesmolinao@gmail.com'
+];
 
 export function ModuleMenu() {
     const router = useRouter();
+    const { user } = useUser();
+    const isEnterprise = user?.email && ENTERPRISE_USERS.includes(user.email);
+
+    if (!isEnterprise) return null;
 
     return (
         <DropdownMenu>

@@ -6,6 +6,11 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader } from '@/components/ui/loader';
 
+const ENTERPRISE_USERS = [
+    'emmanuel.iung@gmail.com',
+    'creacionesmolinao@gmail.com'
+];
+
 export default function WorkshopLayout({
     children,
 }: {
@@ -15,8 +20,12 @@ export default function WorkshopLayout({
     const router = useRouter();
 
     useEffect(() => {
-        if (!loading && !user) {
-            router.push('/login');
+        if (!loading) {
+            if (!user) {
+                router.push('/login');
+            } else if (user.email && !ENTERPRISE_USERS.includes(user.email)) {
+                router.push('/');
+            }
         }
     }, [user, loading, router]);
 
@@ -24,7 +33,7 @@ export default function WorkshopLayout({
         return <Loader text="Cargando taller..." />;
     }
 
-    if (!user) {
+    if (!user || (user.email && !ENTERPRISE_USERS.includes(user.email))) {
         return null; // Will redirect
     }
 
