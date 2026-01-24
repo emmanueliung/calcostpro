@@ -14,7 +14,6 @@ import { Trash2, Plus, Edit, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PublicLinkSection } from '@/components/settings/public-link-section';
 import { PaymentQrSection } from '@/components/settings/payment-qr-section';
-import { Header } from '@/components/header';
 import { Loader } from '@/components/ui/loader';
 import { useRouter } from 'next/navigation';
 
@@ -153,7 +152,6 @@ export default function WorkshopSettingsPage() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <Header />
             <main className="flex-1 container mx-auto p-6 space-y-6">
                 <div className="flex justify-between items-center">
                     <div>

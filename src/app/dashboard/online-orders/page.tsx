@@ -11,6 +11,7 @@ import { OnlineOrdersTable } from '@/components/dashboard/online-orders-table';
 import { Loader2, ShoppingBag, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Header } from '@/components/header';
 
 export default function OnlineOrdersPage() {
     const { user } = useUser();
@@ -129,117 +130,120 @@ export default function OnlineOrdersPage() {
     }
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <ShoppingBag className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-bold">Commandes en Ligne</h1>
-                        <p className="text-muted-foreground">
-                            Gestiona los pedidos recibidos desde la página pública
-                        </p>
+        <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-1 container mx-auto p-4 md:p-8 space-y-6">
+                {/* Header Section */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <ShoppingBag className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-bold">Commandes en Ligne</h1>
+                            <p className="text-muted-foreground">
+                                Gestiona los pedidos recibidos desde la página pública
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Pendientes de Pago
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-yellow-600">
+                                {getOrderCount('pending_payment')}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Pago Verificado
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-blue-600">
+                                {getOrderCount('payment_verified')}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                En Producción
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-purple-600">
+                                {getOrderCount('in_production')}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Total Pedidos
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-primary">
+                                {orders.length}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Orders Table */}
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Pendientes de Pago
-                        </CardTitle>
+                    <CardHeader>
+                        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PublicOrderStatus | 'all')}>
+                            <TabsList className="grid w-full grid-cols-6">
+                                <TabsTrigger value="all">
+                                    Todos ({getOrderCount('all')})
+                                </TabsTrigger>
+                                <TabsTrigger value="pending_payment">
+                                    Pendiente ({getOrderCount('pending_payment')})
+                                </TabsTrigger>
+                                <TabsTrigger value="payment_verified">
+                                    Verificado ({getOrderCount('payment_verified')})
+                                </TabsTrigger>
+                                <TabsTrigger value="in_production">
+                                    Producción ({getOrderCount('in_production')})
+                                </TabsTrigger>
+                                <TabsTrigger value="ready">
+                                    Listo ({getOrderCount('ready')})
+                                </TabsTrigger>
+                                <TabsTrigger value="delivered">
+                                    Entregado ({getOrderCount('delivered')})
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-yellow-600">
-                            {getOrderCount('pending_payment')}
-                        </div>
+                        {filteredOrders.length === 0 ? (
+                            <div className="text-center py-12 text-muted-foreground">
+                                <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p>No hay pedidos en esta categoría</p>
+                            </div>
+                        ) : (
+                            <OnlineOrdersTable
+                                orders={filteredOrders}
+                                onStatusChange={handleStatusChange}
+                            />
+                        )}
                     </CardContent>
                 </Card>
-
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Pago Verificado
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-blue-600">
-                            {getOrderCount('payment_verified')}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            En Producción
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-purple-600">
-                            {getOrderCount('in_production')}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Total Pedidos
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-primary">
-                            {orders.length}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Orders Table */}
-            <Card>
-                <CardHeader>
-                    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PublicOrderStatus | 'all')}>
-                        <TabsList className="grid w-full grid-cols-6">
-                            <TabsTrigger value="all">
-                                Todos ({getOrderCount('all')})
-                            </TabsTrigger>
-                            <TabsTrigger value="pending_payment">
-                                Pendiente ({getOrderCount('pending_payment')})
-                            </TabsTrigger>
-                            <TabsTrigger value="payment_verified">
-                                Verificado ({getOrderCount('payment_verified')})
-                            </TabsTrigger>
-                            <TabsTrigger value="in_production">
-                                Producción ({getOrderCount('in_production')})
-                            </TabsTrigger>
-                            <TabsTrigger value="ready">
-                                Listo ({getOrderCount('ready')})
-                            </TabsTrigger>
-                            <TabsTrigger value="delivered">
-                                Entregado ({getOrderCount('delivered')})
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                </CardHeader>
-                <CardContent>
-                    {filteredOrders.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground">
-                            <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>No hay pedidos en esta categoría</p>
-                        </div>
-                    ) : (
-                        <OnlineOrdersTable
-                            orders={filteredOrders}
-                            onStatusChange={handleStatusChange}
-                        />
-                    )}
-                </CardContent>
-            </Card>
+            </main>
         </div>
     );
 }
