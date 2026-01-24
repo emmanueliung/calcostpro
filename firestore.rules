@@ -62,6 +62,26 @@ service cloud.firestore {
         allow read, write: if request.auth != null;
     }
 
+    // --- PUBLIC ORDER RULES ---
+    
+    // Public can read colleges to display options on order page
+    match /colleges/{collegeId} {
+        allow read: if true; // Public read access
+        allow write: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Public orders - customers can create, owners can manage
+    match /public_orders/{orderId} {
+        // Anyone can create a public order
+        allow create: if request.resource.data.keys().hasAll(['userId', 'customer', 'college', 'items', 'totalAmount', 'status']) &&
+                         request.resource.data.status == 'pending_payment';
+        
+        // Owner can read, update, delete their public orders
+        allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+        
+        // Customer can read their own order by ID (for confirmation page)
+        allow get: if true;
+    }
 
     // Bonus Codes Management
     match /bonusCodes/{codeId} {

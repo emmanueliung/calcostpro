@@ -10,7 +10,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LayoutGrid, Scissors, ClipboardList, Settings } from "lucide-react";
+import { LayoutGrid, Scissors, ClipboardList, Settings, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/firebase";
@@ -52,6 +52,10 @@ export function ModuleMenu() {
                     <DropdownMenuItem onClick={() => router.push('/workshop/production')}>
                         <ClipboardList className="mr-2 h-4 w-4" />
                         <span>Producción</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/dashboard/online-orders')}>
+                        <ShoppingBag className="mr-2 h-4 w-4" />
+                        <span>Commandes en Ligne</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => router.push('/workshop/settings')}>

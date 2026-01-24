@@ -210,3 +210,33 @@ export interface Transaction {
   proofUrl?: string; // For QR screenshot
   date: any;
 }
+
+// --- PUBLIC ORDER TYPES ---
+
+export type PublicOrderStatus =
+  | 'pending_payment'      // Client a soumis, en attente de validation du paiement
+  | 'payment_verified'     // Paiement validé par l'admin
+  | 'in_production'        // En production
+  | 'ready'                // Prêt pour retrait
+  | 'delivered'            // Livré
+  | 'cancelled';           // Annulé
+
+export interface CustomerInfo {
+  name: string;
+  email: string;
+  phone: string;
+}
+
+export interface PublicOrder {
+  id: string;
+  userId: string;              // Owner of the workshop
+  customer: CustomerInfo;      // Client information
+  college: string;             // College name
+  items: OrderItem[];          // Order items
+  status: PublicOrderStatus;
+  totalAmount: number;
+  paymentProofUrl?: string;    // Screenshot of QR payment
+  createdAt: any;
+  updatedAt: any;
+  notes?: string;              // Admin notes
+}

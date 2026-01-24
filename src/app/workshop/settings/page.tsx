@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Trash2, Plus, Edit, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { PublicLinkSection } from '@/components/settings/public-link-section';
 
 export default function WorkshopSettingsPage() {
     const { user } = useUser();
@@ -155,6 +156,9 @@ export default function WorkshopSettingsPage() {
                     </DialogContent>
                 </Dialog>
             </div>
+
+            {/* Public Order Link Section */}
+            <PublicLinkSection />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {colleges.map(college => (
