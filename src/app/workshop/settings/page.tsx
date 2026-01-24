@@ -23,13 +23,18 @@ export default function WorkshopSettingsPage() {
     const db = useFirestore();
     const router = useRouter();
     const { toast } = useToast();
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        if (isUserLoading) return;
+        setMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (isUserLoading || !mounted) return;
         if (!user) {
             router.push('/login');
         }
-    }, [isUserLoading, user, router]);
+    }, [isUserLoading, user, router, mounted]);
 
     const [colleges, setColleges] = useState<College[]>([]);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -142,7 +147,7 @@ export default function WorkshopSettingsPage() {
         }
     };
 
-    if (isUserLoading || !user) {
+    if (!mounted || isUserLoading || !user) {
         return <Loader text="Cargando configuración..." />;
     }
 
