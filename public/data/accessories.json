@@ -1,0 +1,81 @@
+
+[
+  {
+    "id": "cremalleras-1",
+    "name": "Cremalleras",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "botones-2",
+    "name": "Botones",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "broches-de-presion-3",
+    "name": "Broches de presión",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "ganchos-y-presillas-4",
+    "name": "Ganchos y presillas",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "velcro-5",
+    "name": "Velcro",
+    "price": 0,
+    "unit": "m"
+  },
+  {
+    "id": "hebillas-6",
+    "name": "Hebillas",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "elasticos-7",
+    "name": "Elásticos",
+    "price": 0,
+    "unit": "m"
+  },
+  {
+    "id": "cordones-y-cintas-cordon-8",
+    "name": "Cordones y cintas cordón",
+    "price": 0,
+    "unit": "m"
+  },
+  {
+    "id": "ojales-metalicos-o-plasticos-9",
+    "name": "Ojales metálicos o plásticos",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "tancas-o-reguladores-de-cordon-10",
+    "name": "Tancas o reguladores de cordón",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "forros-11",
+    "name": "Forros",
+    "price": 0,
+    "unit": "m"
+  },
+  {
+    "id": "bolsas-y-bolsillos-12",
+    "name": "Bolsas y bolsillos",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "cierres-magneticos-13",
+    "name": "Cierres magnéticos",
+    "price": 0,
+    "unit": "piece"
+  }
+]

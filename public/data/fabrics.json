@@ -1,0 +1,129 @@
+
+[
+  {
+    "id": "algodon-jersey",
+    "name": "Algodón Jersey",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "algodon-pique",
+    "name": "Algodón Piqué",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "algodon-frizado",
+    "name": "Algodón Frizado (Franela)",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "algodon-frizado-sintetico",
+    "name": "Algodón Frizado Sintético",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "kaki-algodon",
+    "name": "Kaki Algodón",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "algodon-fulldicra",
+    "name": "Algodón Fulldicra",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "dri-fit",
+    "name": "Dri-FIT",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "poliadidas",
+    "name": "Poliadidas (Poliamida/Nylon)",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "polibrillo",
+    "name": "Polibrillo",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "vanisado",
+    "name": "Vanisado",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "impala",
+    "name": "Impala",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "tafetan",
+    "name": "Tafetán",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "taslan",
+    "name": "Taslan",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "fibra",
+    "name": "Fibra",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "jean-denim",
+    "name": "Jean (Denim)",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "kaki-drill",
+    "name": "Kaki Drill",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "lycra-dicra",
+    "name": "Lycra Dicra (Kaki Lycra)",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "polav-polar",
+    "name": "Polav (Tela Polar)",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "prada",
+    "name": "Prada",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "popelina",
+    "name": "Popelina",
+    "price": 0,
+    "unit": "m²"
+  },
+  {
+    "id": "jaipura",
+    "name": "Jaipura",
+    "price": 0,
+    "unit": "m²"
+  }
+]

@@ -1,0 +1,83 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Allow users to manage their own user document
+    match /users/{userId} {
+       // Admin can read any user profile, users can read/write their own.
+      allow read: if request.auth != null && (request.auth.uid == userId || request.auth.uid == '0etArrk91fRW10lxIWmI1QLS9Vo2');
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /projects/{projectId} {
+      // Allow read, update, and delete access for the owner
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Allow create access if the new document's userId matches the user's auth uid
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Rules for the 'fittings' subcollection
+      match /fittings/{fittingId} {
+        allow read: if true; // Publicly readable for the link to work initially
+        
+        // Logged-in users (the owner) can create, update, delete
+        allow create, delete: if request.auth != null && get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid;
+        
+        // Anyone can confirm a fitting, but ONLY if changing 'confirmed' from false to true.
+        // This is the key rule for the public confirmation link.
+        allow update: if request.resource.data.confirmed == true &&
+                         resource.data.confirmed == false &&
+                         request.resource.data.keys().hasOnly(['confirmed', 'confirmedAt']);
+      }
+    }
+
+    // --- WORKSHOP MODULE RULES ---
+    
+    match /students/{studentId} {
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /colleges/{collegeId} {
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /orders/{orderId} {
+        allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        // Allow public read of single order by ID (for payment page)
+        allow get: if true;
+    }
+
+    match /transactions/{transactionId} {
+        allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        // Allow public creation for remote payment proof
+        allow create: if request.resource.data.method == 'qr_remote' && request.resource.data.keys().hasAll(['orderId', 'amount', 'proofUrl']);
+    }
+
+    match /settings/{settingId} {
+        allow read, write: if request.auth != null;
+    }
+
+
+    // Bonus Codes Management
+    match /bonusCodes/{codeId} {
+      // The admin can do everything: list, read, create, update, delete.
+      allow read, write: if request.auth != null && request.auth.uid == '0etArrk91fRW10lxIWmI1QLS9Vo2';
+      
+      // Any authenticated user can "get" a single code to check it, but cannot list them all.
+      allow get: if request.auth != null;
+      
+      // A code can only be updated (redeemed) if it's not used yet by an authenticated user.
+      // This rule is now primarily used by the client-side redeem logic.
+      allow update: if request.auth != null &&
+                       resource.data.isUsed == false &&
+                       request.resource.data.isUsed == true &&
+                       request.resource.data.usedBy == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['isUsed', 'usedBy', 'usedAt']);
+    }
+  }
+}

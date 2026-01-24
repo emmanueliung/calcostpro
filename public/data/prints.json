@@ -1,0 +1,38 @@
+[
+  {
+    "id": "serigrafia",
+    "name": "Serigrafía",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "sublimacion",
+    "name": "Sublimación",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "dtf",
+    "name": "DTF",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "vinilo-textil",
+    "name": "Vinilo textil",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "transfer",
+    "name": "Transfer",
+    "price": 0,
+    "unit": "piece"
+  },
+  {
+    "id": "bordado",
+    "name": "Bordado",
+    "price": 0,
+    "unit": "piece"
+  }
+]

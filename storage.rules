@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Remote Payment Proofs
+    // Allow public upload if the file is an image and decent size
+    match /payment_proofs/{orderId}/{fileName} {
+      allow write: if request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow read: if true; // Or restrict to owner? Public for now to be safe on frontend display
+    }
+  }
+}
