@@ -197,7 +197,6 @@ export function PaymentPanel({ total, onProcessPayment, isProcessing }: PaymentP
                                         id="proof-upload-input"
                                         type="file"
                                         accept="image/*"
-                                        capture="environment"
                                         className="hidden"
                                         onChange={handleProofCapture}
                                     />
@@ -208,14 +207,14 @@ export function PaymentPanel({ total, onProcessPayment, isProcessing }: PaymentP
                                             className="w-full border-dashed border-2 h-12"
                                             onClick={() => document.getElementById('proof-upload-input')?.click()}
                                         >
-                                            <Camera className="mr-2 h-4 w-4" /> Tomar Foto / Subir
+                                            <Upload className="mr-2 h-4 w-4" /> Cargar un comprobante
                                         </Button>
                                     ) : (
                                         <div className="relative h-32 w-full bg-slate-100 rounded-lg overflow-hidden group">
                                             <img src={proofImage} alt="Preview" className="h-full w-full object-cover" />
                                             <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Button size="sm" variant="destructive" onClick={() => setProofImage(null)}>
-                                                    Eliminar Foto
+                                                    Eliminar Comprobante
                                                 </Button>
                                             </div>
                                             <div className="absolute bottom-2 right-2 bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center shadow-sm">

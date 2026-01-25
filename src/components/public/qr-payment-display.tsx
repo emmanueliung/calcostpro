@@ -84,7 +84,6 @@ export function QrPaymentDisplay({ qrCodeUrl, totalAmount, onProofUpload, proofU
                         id="proof-upload-input"
                         type="file"
                         accept="image/*"
-                        capture="environment"
                         className="hidden"
                         onChange={handleProofCapture}
                         disabled={uploading}
@@ -97,8 +96,8 @@ export function QrPaymentDisplay({ qrCodeUrl, totalAmount, onProofUpload, proofU
                             onClick={() => document.getElementById('proof-upload-input')?.click()}
                             disabled={uploading}
                         >
-                            <Camera className="mr-2 h-5 w-5" />
-                            {uploading ? 'Subiendo...' : 'Tomar Foto / Subir Comprobante'}
+                            <Upload className="mr-2 h-5 w-5" />
+                            {uploading ? 'Subiendo...' : 'Cargar un comprobante'}
                         </Button>
                     ) : (
                         <div className="relative h-40 w-full bg-slate-100 rounded-lg overflow-hidden group border-2 border-green-500">
@@ -109,7 +108,7 @@ export function QrPaymentDisplay({ qrCodeUrl, totalAmount, onProofUpload, proofU
                                     variant="destructive"
                                     onClick={() => onProofUpload('')}
                                 >
-                                    Cambiar Foto
+                                    Cambiar Comprobante
                                 </Button>
                             </div>
                             <div className="absolute bottom-2 right-2 bg-green-500 text-white text-xs px-3 py-1 rounded-full flex items-center shadow-lg">
