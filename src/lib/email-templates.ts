@@ -1,13 +1,13 @@
 import { CustomerInfo, OrderItem } from './types';
 
 export function generateCustomerConfirmationEmail(
-    customer: CustomerInfo,
-    orderId: string,
-    items: OrderItem[],
-    totalAmount: number,
-    college: string
+  customer: CustomerInfo,
+  orderId: string,
+  items: OrderItem[],
+  totalAmount: number,
+  college: string
 ): { subject: string; html: string } {
-    const itemsHtml = items.map(item => `
+  const itemsHtml = items.map(item => `
     <tr>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.productName}</td>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
@@ -16,9 +16,9 @@ export function generateCustomerConfirmationEmail(
     </tr>
   `).join('');
 
-    return {
-        subject: `Confirmación de Pedido #${orderId.slice(0, 8)} - ${college}`,
-        html: `
+  return {
+    subject: `Confirmación de Pedido #${orderId.slice(0, 8)} - ${college}`,
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -103,17 +103,17 @@ export function generateCustomerConfirmationEmail(
       </body>
       </html>
     `
-    };
+  };
 }
 
 export function generateWorkshopNotificationEmail(
-    customer: CustomerInfo,
-    orderId: string,
-    items: OrderItem[],
-    totalAmount: number,
-    college: string
+  customer: CustomerInfo,
+  orderId: string,
+  items: OrderItem[],
+  totalAmount: number,
+  college: string
 ): { subject: string; html: string } {
-    const itemsHtml = items.map(item => `
+  const itemsHtml = items.map(item => `
     <tr>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.productName}</td>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
@@ -121,9 +121,9 @@ export function generateWorkshopNotificationEmail(
     </tr>
   `).join('');
 
-    return {
-        subject: `🔔 Nuevo Pedido en Línea #${orderId.slice(0, 8)}`,
-        html: `
+  return {
+    subject: `🔔 Nuevo Pedido en Línea #${orderId.slice(0, 8)}`,
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -205,7 +205,7 @@ export function generateWorkshopNotificationEmail(
 
             <!-- CTA Button -->
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://calcostpro.com'}/dashboard/online-orders" 
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://calcostpro.com'}/workshop/production" 
                  style="display: inline-block; background-color: #3b82f6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
                 Ver Pedido en Dashboard
               </a>
@@ -222,5 +222,5 @@ export function generateWorkshopNotificationEmail(
       </body>
       </html>
     `
-    };
+  };
 }

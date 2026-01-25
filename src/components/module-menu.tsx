@@ -51,11 +51,7 @@ export function ModuleMenu() {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/workshop/production')}>
                         <ClipboardList className="mr-2 h-4 w-4" />
-                        <span>Producción</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/dashboard/online-orders')}>
-                        <ShoppingBag className="mr-2 h-4 w-4" />
-                        <span>Commandes en Ligne</span>
+                        <span>Gestión de Pedidos</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => router.push('/workshop/settings')}>
