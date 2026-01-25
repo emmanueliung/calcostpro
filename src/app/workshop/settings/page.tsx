@@ -153,72 +153,90 @@ export default function WorkshopSettingsPage() {
     return (
         <div className="flex flex-col min-h-screen">
             <main className="flex-1 container mx-auto p-6 space-y-6">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center bg-white p-4 rounded-xl border shadow-sm">
                     <div>
                         <h1 className="text-3xl font-bold">Configuración de Taller</h1>
-                        <p className="text-muted-foreground">Gestiona tus listas de precios por colegio/curso.</p>
+                        <p className="text-muted-foreground">Gestiona tus listas de precios, pagos y tienda online.</p>
                     </div>
-                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                        <DialogTrigger asChild>
-                            <Button><Plus className="mr-2 h-4 w-4" /> Nueva Lista</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader><DialogTitle>Registrar Nueva Lista</DialogTitle></DialogHeader>
-                            <div className="py-4 space-y-4">
-                                <div className="space-y-2">
-                                    <Label>Nombre del Colegio / Lista</Label>
-                                    <Input value={newCollegeName} onChange={e => setNewCollegeName(e.target.value)} placeholder="Ej: La Salle" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Curso (Opcional)</Label>
-                                    <Input value={newCollegeCourse} onChange={e => setNewCollegeCourse(e.target.value)} placeholder="Ej: Promo 2026, 6to B..." />
-                                </div>
-                            </div>
-                            <DialogFooter><Button onClick={handleCreateCollege}>Guardar</Button></DialogFooter>
-                        </DialogContent>
-                    </Dialog>
                 </div>
 
-                {/* Payment QR Configuration Section */}
-                <PaymentQrSection />
-
-                {/* Public Order Link Section */}
-                <PublicLinkSection />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {colleges.map(college => (
-                        <Card key={college.id} className="relative flex flex-col">
-                            <CardHeader className="pb-2">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <CardTitle className="text-lg">{college.name}</CardTitle>
-                                        {college.course && <CardDescription className="text-sm font-semibold text-primary">{college.course}</CardDescription>}
+                {/* College Pricing Lists Section - Moved to Top */}
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center border-b pb-2">
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <span className="bg-primary/10 p-1.5 rounded-lg text-primary">
+                                <Plus className="h-5 w-5" />
+                            </span>
+                            Mis Listas de Precios
+                        </h2>
+                        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="sm"><Plus className="mr-2 h-4 w-4" /> Nueva Lista</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader><DialogTitle>Registrar Nueva Lista</DialogTitle></DialogHeader>
+                                <div className="py-4 space-y-4">
+                                    <div className="space-y-2">
+                                        <Label>Nombre del Colegio / Lista</Label>
+                                        <Input value={newCollegeName} onChange={e => setNewCollegeName(e.target.value)} placeholder="Ej: La Salle" />
                                     </div>
-                                    <div className="flex gap-1">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => openEditDialog(college)}>
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDeleteList(college.id)}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                    <div className="space-y-2">
+                                        <Label>Curso (Opcional)</Label>
+                                        <Input value={newCollegeCourse} onChange={e => setNewCollegeCourse(e.target.value)} placeholder="Ej: Promo 2026, 6to B..." />
                                     </div>
                                 </div>
-                            </CardHeader>
-                            <CardContent className="flex-1 text-sm">
-                                <p className="text-muted-foreground mb-2">{(college.priceList?.length || 0)} artículos configurados</p>
-                                <div className="space-y-1">
-                                    {college.priceList?.slice(0, 3).map((item, i) => (
-                                        <div key={i} className="flex justify-between text-muted-foreground">
-                                            <span>{item.name}</span>
-                                            <span>{item.price} Bs</span>
+                                <DialogFooter><Button onClick={handleCreateCollege}>Guardar</Button></DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {colleges.map(college => (
+                            <Card key={college.id} className="relative flex flex-col hover:shadow-md transition-shadow">
+                                <CardHeader className="pb-2">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <CardTitle className="text-lg">{college.name}</CardTitle>
+                                            {college.course && <CardDescription className="text-sm font-semibold text-primary">{college.course}</CardDescription>}
                                         </div>
-                                    ))}
-                                    {(college.priceList?.length || 0) > 3 && <p className="text-xs italic text-muted-foreground">... y más</p>}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                                        <div className="flex gap-1">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => openEditDialog(college)}>
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDeleteList(college.id)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex-1 text-sm">
+                                    <p className="text-muted-foreground mb-2">{(college.priceList?.length || 0)} artículos configurados</p>
+                                    <div className="space-y-1">
+                                        {college.priceList?.slice(0, 3).map((item, i) => (
+                                            <div key={i} className="flex justify-between text-muted-foreground">
+                                                <span>{item.name}</span>
+                                                <span>{item.price} Bs</span>
+                                            </div>
+                                        ))}
+                                        {(college.priceList?.length || 0) > 3 && <p className="text-xs italic text-muted-foreground">... y más</p>}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                        {colleges.length === 0 && (
+                            <div className="col-span-full py-12 text-center border-2 border-dashed rounded-xl border-muted-foreground/20">
+                                <p className="text-muted-foreground">Aún no has creado ninguna lista de precios.</p>
+                                <Button variant="outline" size="sm" className="mt-4" onClick={() => setIsCreateOpen(true)}>
+                                    <Plus className="mr-2 h-4 w-4" /> Crear mi primera lista
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 </div>
+
+                {/* Other Config Sections Moved down */}
+                <PaymentQrSection />
+                <PublicLinkSection />
 
                 {/* Edit Dialog */}
                 <Dialog open={!!editingCollege} onOpenChange={(open) => !open && setEditingCollege(null)}>
