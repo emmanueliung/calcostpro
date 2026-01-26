@@ -102,11 +102,13 @@ export function OrderPanel({ student, items, onAddItem, onRemoveItem }: OrderPan
     };
 
     const handleAddConfiguredItem = (name: string, price: number) => {
+        const studentSize = student?.sizes?.[name] || '';
         onAddItem({
             productName: name,
             quantity: 1,
             price: price,
-            type: 'sur_mesure' // Technically checks against the sizes we recorded
+            size: studentSize,
+            type: 'sur_mesure'
         });
     };
 

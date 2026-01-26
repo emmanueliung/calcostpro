@@ -34,6 +34,7 @@ export function BulkImportDialog({ defaultCollege, availableColleges, onSuccess 
     const [isProcessing, setIsProcessing] = useState(false);
     const [previewList, setPreviewList] = useState<string[]>([]);
     const [step, setStep] = useState<'input' | 'preview'>('input');
+    const [importGender, setImportGender] = useState<'Hombre' | 'Mujer'>('Hombre');
 
     const handlePreview = () => {
         if (!college) {
@@ -79,6 +80,7 @@ export function BulkImportDialog({ defaultCollege, availableColleges, onSuccess 
                     college: collegeName,
                     collegeId: collegeId,
                     classroom: classroom,
+                    gender: importGender,
                     measurements: defaultMeasurements,
                     createdAt: serverTimestamp()
                 });
@@ -145,6 +147,18 @@ export function BulkImportDialog({ defaultCollege, availableColleges, onSuccess 
                                     onChange={(e) => setCollege(e.target.value)}
                                 />
                             )}
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Género para esta lista</Label>
+                            <Select value={importGender} onValueChange={(val: any) => setImportGender(val)}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Hombre">Hombre (Varones)</SelectItem>
+                                    <SelectItem value="Mujer">Mujer (Damas)</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <Label>Lista de Nombres (Uno por línea)</Label>

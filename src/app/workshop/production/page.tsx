@@ -18,6 +18,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PaymentPanel } from '@/components/workshop/payment-panel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OnlineOrdersView } from '@/components/workshop/online-orders-view';
+import { ProductionSummary } from '@/components/workshop/production-summary';
+import { Printer } from 'lucide-react';
 
 export default function ProductionPage() {
     const { user, isUserLoading } = useUser();
@@ -139,6 +141,10 @@ export default function ProductionPage() {
                     <TabsTrigger value="online" className="py-2 px-6 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
                         <ShoppingBag className="h-4 w-4" />
                         Tienda Online
+                    </TabsTrigger>
+                    <TabsTrigger value="summary" className="py-2 px-6 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
+                        <Printer className="h-4 w-4" />
+                        Resumen Confeccionista
                     </TabsTrigger>
                 </TabsList>
 
@@ -268,6 +274,13 @@ export default function ProductionPage() {
 
                 <TabsContent value="online" className="p-0 mt-0">
                     <OnlineOrdersView />
+                </TabsContent>
+
+                <TabsContent value="summary" className="space-y-6 p-0 mt-0">
+                    <ProductionSummary
+                        orders={filteredOrders}
+                        collegeName={selectedCollege}
+                    />
                 </TabsContent>
             </Tabs>
 

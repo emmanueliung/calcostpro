@@ -43,6 +43,7 @@ export default function WorkshopPage() {
                 userId: user.uid,
                 studentId: selectedStudent.id,
                 studentName: selectedStudent.name,
+                studentGender: selectedStudent.gender || 'Hombre',
                 college: selectedStudent.college,
                 items: currentItems,
                 status: 'in_production', // Default starting status

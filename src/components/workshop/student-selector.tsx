@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { BulkImportDialog } from './bulk-import-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface StudentSelectorProps {
@@ -35,6 +36,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
     // New Student Form State
     const [newName, setNewName] = useState('');
     const [newCollege, setNewCollege] = useState('');
+    const [newGender, setNewGender] = useState<'Hombre' | 'Mujer'>('Hombre');
     // Classroom removed as requested
 
     // Sizes State
@@ -134,6 +136,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
         setEditingStudent(student);
         setNewName(student.name);
         setNewCollege(student.collegeId || student.college); // Use ID if available, fallback to name for migration
+        setNewGender(student.gender || 'Hombre');
         setSizes(student.sizes || {});
         setIsCreateOpen(true);
     };
@@ -184,6 +187,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 name: newName.trim(),
                 college: collegeName,
                 collegeId: collegeId,
+                gender: newGender,
                 classroom: hiddenClassroom, // SAVING THE COURSE HERE
                 measurements: defaultMeasurements,
                 sizes: cleanSizes, // Save the sizes map
@@ -242,6 +246,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
     const resetForm = () => {
         setNewName('');
         setNewCollege('');
+        setNewGender('Hombre');
         setSizes({});
         setEditingStudent(null);
     };
@@ -319,8 +324,13 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                                         }`}>
                                                         <UserIcon className="h-3.5 w-3.5" />
                                                     </div>
-                                                    <div className="overflow-hidden">
-                                                        <p className="font-medium text-xs truncate leading-tight">{student.name}</p>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-medium text-sm truncate leading-tight">{student.name}</p>
+                                                            <Badge variant="outline" className={`text-[9px] px-1 py-0 h-3.5 ${student.gender === 'Mujer' ? 'border-pink-200 text-pink-600 bg-pink-50' : 'border-blue-200 text-blue-600 bg-blue-50'}`}>
+                                                                {student.gender === 'Mujer' ? 'M' : 'H'}
+                                                            </Badge>
+                                                        </div>
                                                         <p className="text-[10px] text-muted-foreground truncate">
                                                             {student.college} {student.classroom ? `(${student.classroom})` : ''}
                                                         </p>
@@ -399,6 +409,21 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                         <p className="text-xs text-red-500">No hay colegios configurados.</p>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Género *</Label>
+                                <Select value={newGender} onValueChange={(val: any) => setNewGender(val)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Seleccionar Género" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Hombre">Hombre</SelectItem>
+                                        <SelectItem value="Mujer">Mujer</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
 

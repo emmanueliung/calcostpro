@@ -162,6 +162,7 @@ export interface Student {
   college: string;
   collegeId?: string; // Reference to the price list (College)
   name: string; // "Dupont Léo"
+  gender?: 'Hombre' | 'Mujer';
   classroom?: string; // Clase/Curso
   measurements?: StudentMeasurements;
   sizes?: Record<string, string>; // e.g. { 'Pantalon': '38', 'Veste': 'M' }
@@ -176,6 +177,7 @@ export interface OrderItem {
   productName: string; // "Polo T12" or "Uniforme completo"
   quantity: number;
   price: number;
+  size?: string;
   type: OrderType;
 }
 
@@ -198,6 +200,7 @@ export interface Order {
   userId: string;
   studentId: string;
   studentName: string; // Denormalized for easy display
+  studentGender?: 'Hombre' | 'Mujer';
   college: string; // Denormalized
   items: OrderItem[];
   status: OrderStatus;
