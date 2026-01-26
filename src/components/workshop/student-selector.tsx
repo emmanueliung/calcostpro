@@ -78,10 +78,17 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
         return () => unsubscribe();
     }, [user, db]);
 
-    // Generate unique composite keys for the filter: "CollegeName (Course)" or just "CollegeName"
-    const uniqueGroups = Array.from(new Set(students.map(s => {
+    // Generate filter options based on availableColleges
+    // We also include student groups that might not be in availableColleges (legacy/orphaned)
+    const studentGroups = Array.from(new Set(students.map(s => {
         return s.classroom ? `${s.college} (${s.classroom})` : s.college;
-    }))).filter(Boolean).sort();
+    }))).filter(Boolean);
+
+    const configuredGroups = availableColleges.map(c => {
+        return c.course ? `${c.name} (${c.course})` : c.name;
+    });
+
+    const allFilterOptions = Array.from(new Set([...configuredGroups, ...studentGroups])).sort();
 
     const filteredStudents = students.filter(student => {
         const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -250,7 +257,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Todos los Colegios</SelectItem>
-                        {uniqueGroups.map(group => (
+                        {allFilterOptions.map(group => (
                             <SelectItem key={group} value={group}>{group}</SelectItem>
                         ))}
                     </SelectContent>
@@ -276,53 +283,72 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
             {/* Student List */}
             <ScrollArea className="flex-1 border rounded-md">
-                <div className="p-2 space-y-2">
+                <div className="p-2 space-y-4">
                     {filteredStudents.length === 0 ? (
                         <p className="text-sm text-center text-muted-foreground py-4">
                             No se encontraron estudiantes.
                         </p>
                     ) : (
-                        filteredStudents.map(student => (
-                            <div
-                                key={student.id}
-                                onClick={() => onSelectStudent(student)}
-                                className={`group p-3 rounded-lg border cursor-pointer transition-colors flex items-center justify-between gap-3 ${selectedStudentId === student.id
-                                    ? 'bg-primary/10 border-primary'
-                                    : 'hover:bg-muted bg-card'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selectedStudentId === student.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                                        }`}>
-                                        <UserIcon className="h-4 w-4" />
+                        Object.entries(
+                            filteredStudents.reduce((acc, student) => {
+                                const group = student.classroom ? `${student.college} (${student.classroom})` : student.college;
+                                if (!acc[group]) acc[group] = [];
+                                acc[group].push(student);
+                                return acc;
+                            }, {} as Record<string, Student[]>)
+                        )
+                            .sort(([a], [b]) => a.localeCompare(b))
+                            .map(([group, groupStudents]) => (
+                                <div key={group} className="space-y-1">
+                                    <div className="px-2 py-1 sticky top-0 bg-white/95 backdrop-blur-sm z-10 flex justify-between items-center border-b mb-1">
+                                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{group}</h5>
+                                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">{groupStudents.length}</span>
                                     </div>
-                                    <div>
-                                        <p className="font-medium text-sm">{student.name}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {student.college} {student.classroom ? `(${student.classroom})` : ''}
-                                        </p>
+                                    <div className="space-y-1.5">
+                                        {groupStudents.map(student => (
+                                            <div
+                                                key={student.id}
+                                                onClick={() => onSelectStudent(student)}
+                                                className={`group p-2.5 rounded-lg border cursor-pointer transition-colors flex items-center justify-between gap-3 ${selectedStudentId === student.id
+                                                    ? 'bg-primary/10 border-primary shadow-sm'
+                                                    : 'hover:bg-muted bg-card'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${selectedStudentId === student.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                                        }`}>
+                                                        <UserIcon className="h-3.5 w-3.5" />
+                                                    </div>
+                                                    <div className="overflow-hidden">
+                                                        <p className="font-medium text-xs truncate leading-tight">{student.name}</p>
+                                                        <p className="text-[10px] text-muted-foreground truncate">
+                                                            {student.college} {student.classroom ? `(${student.classroom})` : ''}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-1 shrink-0">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary"
+                                                        onClick={(e) => handleEditClick(e, student)}
+                                                    >
+                                                        <Edit className="h-3 w-3" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:bg-destructive/10"
+                                                        onClick={(e) => handleDeleteStudent(e, student.id)}
+                                                    >
+                                                        <Trash2 className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                                <div className="flex gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary"
-                                        onClick={(e) => handleEditClick(e, student)}
-                                    >
-                                        <Edit className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:bg-destructive/10"
-                                        onClick={(e) => handleDeleteStudent(e, student.id)}
-                                    >
-                                        <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                </div>
-                            </div>
-                        ))
+                            ))
                     )}
                 </div>
             </ScrollArea>
