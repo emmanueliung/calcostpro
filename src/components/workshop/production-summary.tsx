@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useReactToPrint } from 'react-to-print';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface ProductionSummaryProps {
     orders: Order[];
@@ -23,6 +25,7 @@ interface SummaryItem {
 }
 
 export function ProductionSummary({ orders, collegeName }: ProductionSummaryProps) {
+    const [notes, setNotes] = useState('');
     const printRef = useRef<HTMLDivElement>(null);
     const handlePrint = useReactToPrint({
         content: () => printRef.current,
@@ -85,6 +88,41 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                         <h1 className="text-2xl font-bold">Resumen de Producción</h1>
                         <p className="text-sm text-muted-foreground">Colegio: {collegeName === 'all' ? 'Todos los colegios' : collegeName}</p>
                         <p className="text-sm text-muted-foreground">Total: {totalGarments} prendas</p>
+                    </div>
+
+                    {/* Pre-print Notes Input */}
+                    <div className="mb-6 no-print">
+                        <Label className="mb-2 block">Notas / Observaciones del Resumen</Label>
+                        <Textarea
+                            placeholder="Añade instrucciones para el confeccionista..."
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            className="bg-white"
+                        />
+                    </div>
+
+                    {/* Print Notes Display */}
+                    {notes && (
+                        <div className="hidden print:block mb-6 p-4 border rounded-md bg-slate-50 italic text-sm">
+                            <h4 className="font-bold not-italic mb-1 uppercase text-xs text-muted-foreground">Observaciones:</h4>
+                            {notes}
+                        </div>
+                    )}
+
+                    {/* Summary Totals Table */}
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold border-b pb-2 mb-4 uppercase text-sm tracking-wide">Total por Confección</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {Object.entries(groupedSummary).sort(([a], [b]) => a.localeCompare(b)).map(([garment, genders]) => {
+                                const garmentTotal = Object.values(genders).reduce((acc, sizes) => acc + Object.values(sizes).reduce((s, q) => s + q, 0), 0);
+                                return (
+                                    <div key={garment} className="bg-white border rounded-lg p-3 flex flex-col items-center justify-center shadow-sm">
+                                        <span className="text-[10px] uppercase text-muted-foreground font-bold text-center leading-tight mb-1">{garment}</span>
+                                        <span className="text-2xl font-black text-primary">{garmentTotal}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     {Object.keys(groupedSummary).length === 0 ? (
