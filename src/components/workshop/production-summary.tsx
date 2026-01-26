@@ -91,8 +91,12 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                         <p className="text-center py-8 text-muted-foreground">No hay datos para resumir</p>
                     ) : (
                         <div className="space-y-8">
-                            {Object.entries(groupedSummary).sort(([a], [b]) => a.localeCompare(b)).map(([garment, genders]) => (
-                                <div key={garment} className="space-y-4">
+                            {Object.entries(groupedSummary).sort(([a], [b]) => a.localeCompare(b)).map(([garment, genders], idx) => (
+                                <div
+                                    key={garment}
+                                    className="space-y-4"
+                                    style={{ breakBefore: idx > 0 ? 'page' : 'auto' }}
+                                >
                                     <h3 className="text-lg font-bold border-b pb-2 flex items-center justify-between">
                                         {garment}
                                         <Badge variant="outline">{Object.values(genders).reduce((acc, sizes) => acc + Object.values(sizes).reduce((s, q) => s + q, 0), 0)} unidades</Badge>
