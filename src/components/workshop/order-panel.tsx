@@ -50,21 +50,32 @@ export function OrderPanel({ student, items, onAddItem, onRemoveItem }: OrderPan
                     }
                 }
 
-                // 2. Fallback: Try to find the college by Name and Course (classroom)
-                // This is for backward compatibility or if collegeId is missing/invalid
+                // 2. Fallback: Fetch all colleges for the user and find the best match
+                // We do this in JS to be flexible with Name/Course concatenation in legacy data
                 const q = query(
                     collection(db, "colleges"),
-                    where("userId", "==", user.uid),
-                    where("name", "==", student.college)
+                    where("userId", "==", user.uid)
                 );
 
                 const snapshot = await getDocs(q);
-                if (!snapshot.empty) {
-                    // Try to find the exact match with course/classroom
-                    const studentsCourse = student.classroom || '';
-                    const match = snapshot.docs.find(doc => (doc.data().course || '') === studentsCourse) || snapshot.docs[0];
+                const allColleges = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as College));
 
-                    setCollegeConfig({ id: match.id, ...match.data() } as College);
+                // Try exact match with both name and course
+                let match = allColleges.find(c =>
+                    c.name === student.college && (c.course || '') === (student.classroom || '')
+                );
+
+                // If no exact match, try matching the concatenated string
+                if (!match) {
+                    match = allColleges.find(c => {
+                        const fullName = c.course ? `${c.name} ${c.course}` : c.name;
+                        const fullNameAlt = c.course ? `${c.name} (${c.course})` : c.name;
+                        return fullName === student.college || fullNameAlt === student.college || c.name === student.college;
+                    });
+                }
+
+                if (match) {
+                    setCollegeConfig(match);
                     setActiveTab("uniform");
                 } else {
                     setCollegeConfig(null);

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
-import { StudentMeasurements } from '@/lib/types';
+import { College, StudentMeasurements } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,19 +12,24 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 interface BulkImportDialogProps {
     defaultCollege?: string;
+    availableColleges: College[];
     onSuccess: () => void;
 }
 
-export function BulkImportDialog({ defaultCollege, onSuccess }: BulkImportDialogProps) {
+export function BulkImportDialog({ defaultCollege, availableColleges, onSuccess }: BulkImportDialogProps) {
     const { user } = useUser();
     const db = useFirestore();
     const { toast } = useToast();
 
     const [open, setOpen] = useState(false);
-    const [college, setCollege] = useState(defaultCollege || '');
+    // defaultCollege might be an ID or a name. Find the config.
+    const initialCollegeConfig = availableColleges.find(c => c.id === defaultCollege || c.name === defaultCollege);
+    const [college, setCollege] = useState(initialCollegeConfig?.id || defaultCollege || '');
     const [inputText, setInputText] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [previewList, setPreviewList] = useState<string[]>([]);
@@ -56,6 +61,12 @@ export function BulkImportDialog({ defaultCollege, onSuccess }: BulkImportDialog
             const batch = writeBatch(db);
             const studentsRef = collection(db, "students");
 
+            // Find the config for the selected college value (which could be ID or name)
+            const matchedConfig = availableColleges.find(c => c.id === college || c.name === college);
+            const collegeName = matchedConfig?.name || college;
+            const collegeId = matchedConfig?.id || '';
+            const classroom = matchedConfig?.course || '';
+
             const defaultMeasurements: StudentMeasurements = {
                 height: 0, chest: 0, waist: 0, hips: 0, sleeve: 0, leg: 0, shoulder: 0, neck: 0
             };
@@ -65,8 +76,9 @@ export function BulkImportDialog({ defaultCollege, onSuccess }: BulkImportDialog
                 batch.set(newDocRef, {
                     userId: user.uid,
                     name: name,
-                    college: college,
-                    classroom: '', // Optional: could add this field to import too
+                    college: collegeName,
+                    collegeId: collegeId,
+                    classroom: classroom,
                     measurements: defaultMeasurements,
                     createdAt: serverTimestamp()
                 });
@@ -113,11 +125,26 @@ export function BulkImportDialog({ defaultCollege, onSuccess }: BulkImportDialog
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label>Colegio *</Label>
-                            <Input
-                                placeholder="Ej: La Salle"
-                                value={college}
-                                onChange={(e) => setCollege(e.target.value)}
-                            />
+                            {availableColleges.length > 0 ? (
+                                <Select value={college} onValueChange={setCollege}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Seleccionar Colegio" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableColleges.map(c => (
+                                            <SelectItem key={c.id} value={c.id}>
+                                                {c.name} {c.course ? `(${c.course})` : ''}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <Input
+                                    placeholder="Ej: La Salle"
+                                    value={college}
+                                    onChange={(e) => setCollege(e.target.value)}
+                                />
+                            )}
                         </div>
                         <div className="space-y-2">
                             <Label>Lista de Nombres (Uno por línea)</Label>

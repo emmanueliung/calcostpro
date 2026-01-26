@@ -258,6 +258,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
                 <BulkImportDialog
                     defaultCollege={selectedCollegeFilter !== "all" ? selectedCollegeFilter : ''}
+                    availableColleges={availableColleges}
                     onSuccess={() => toast({ title: "Lista actualizada" })}
                 />
             </div>
