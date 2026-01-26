@@ -109,19 +109,35 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                         </div>
                     )}
 
-                    {/* Summary Totals Table */}
+                    {/* Compact Summary Totals Table */}
                     <div className="mb-8">
-                        <h3 className="text-lg font-bold border-b pb-2 mb-4 uppercase text-sm tracking-wide">Total por Confección</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {Object.entries(groupedSummary).sort(([a], [b]) => a.localeCompare(b)).map(([garment, genders]) => {
-                                const garmentTotal = Object.values(genders).reduce((acc, sizes) => acc + Object.values(sizes).reduce((s, q) => s + q, 0), 0);
-                                return (
-                                    <div key={garment} className="bg-white border rounded-lg p-3 flex flex-col items-center justify-center shadow-sm">
-                                        <span className="text-[10px] uppercase text-muted-foreground font-bold text-center leading-tight mb-1">{garment}</span>
-                                        <span className="text-2xl font-black text-primary">{garmentTotal}</span>
-                                    </div>
-                                );
-                            })}
+                        <h3 className="text-lg font-bold border-b pb-2 mb-4 uppercase text-xs tracking-wide">Resumen General por Confección</h3>
+                        <div className="border rounded-md overflow-hidden bg-white">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+                                        <TableHead className="font-bold">Prenda</TableHead>
+                                        <TableHead className="text-center font-bold">Hombre</TableHead>
+                                        <TableHead className="text-center font-bold">Mujer</TableHead>
+                                        <TableHead className="text-right font-bold">Total</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {Object.entries(groupedSummary).sort(([a], [b]) => a.localeCompare(b)).map(([garment, genders]) => {
+                                        const hombreTotal = Object.values(genders['Hombre'] || {}).reduce((s, q) => s + q, 0);
+                                        const mujerTotal = Object.values(genders['Mujer'] || {}).reduce((s, q) => s + q, 0);
+                                        const total = hombreTotal + mujerTotal;
+                                        return (
+                                            <TableRow key={garment} className="hover:bg-transparent">
+                                                <TableCell className="font-medium">{garment}</TableCell>
+                                                <TableCell className="text-center">{hombreTotal}</TableCell>
+                                                <TableCell className="text-center">{mujerTotal}</TableCell>
+                                                <TableCell className="text-right font-bold text-primary">{total}</TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
                         </div>
                     </div>
 
@@ -129,44 +145,59 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                         <p className="text-center py-8 text-muted-foreground">No hay datos para resumir</p>
                     ) : (
                         <div className="space-y-8">
-                            {Object.entries(groupedSummary).sort(([a], [b]) => a.localeCompare(b)).map(([garment, genders], idx) => (
-                                <div
-                                    key={garment}
-                                    className="space-y-4"
-                                    style={{ breakBefore: idx > 0 ? 'page' : 'auto' }}
-                                >
-                                    <h3 className="text-lg font-bold border-b pb-2 flex items-center justify-between">
-                                        {garment}
-                                        <Badge variant="outline">{Object.values(genders).reduce((acc, sizes) => acc + Object.values(sizes).reduce((s, q) => s + q, 0), 0)} unidades</Badge>
-                                    </h3>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {Object.entries(genders).sort(([a], [b]) => b.localeCompare(a)).map(([gender, sizes]) => (
-                                            <div key={gender} className="border rounded-md overflow-hidden bg-white">
-                                                <div className={`px-3 py-2 text-sm font-bold border-b ${gender === 'Mujer' ? 'bg-pink-50 text-pink-700' : 'bg-blue-50 text-blue-700'}`}>
-                                                    {gender}
-                                                </div>
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow className="hover:bg-transparent">
-                                                            <TableHead className="h-8">Talla</TableHead>
-                                                            <TableHead className="h-8 text-right">Cantidad</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {Object.entries(sizes).sort(([a], [b]) => a.localeCompare(b)).map(([size, count]) => (
-                                                            <TableRow key={size} className="hover:bg-transparent">
-                                                                <TableCell className="py-2 text-sm font-medium">{size}</TableCell>
-                                                                <TableCell className="py-2 text-right font-bold text-base">{count}</TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                                    </TableBody>
-                                                </Table>
+                            {Object.entries(groupedSummary).sort(([a], [b]) => a.localeCompare(b)).map(([garment, genders], idx) => {
+                                const hombreTotal = Object.values(genders['Hombre'] || {}).reduce((s, q) => s + q, 0);
+                                const mujerTotal = Object.values(genders['Mujer'] || {}).reduce((s, q) => s + q, 0);
+                                const total = hombreTotal + mujerTotal;
+                                return (
+                                    <div
+                                        key={garment}
+                                        className="space-y-4"
+                                        style={{ breakBefore: idx > 0 ? 'page' : 'auto' }}
+                                    >
+                                        <div className="flex items-center justify-between border-b pb-2">
+                                            <h3 className="text-xl font-black uppercase tracking-tight">
+                                                {garment}
+                                            </h3>
+                                            <div className="flex gap-2">
+                                                {hombreTotal > 0 && <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50">H: {hombreTotal}</Badge>}
+                                                {mujerTotal > 0 && <Badge variant="outline" className="border-pink-200 text-pink-700 bg-pink-50">M: {mujerTotal}</Badge>}
+                                                <Badge variant="default" className="bg-primary">{total} unidades</Badge>
                                             </div>
-                                        ))}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {Object.entries(genders).sort(([a], [b]) => b.localeCompare(a)).map(([gender, sizes]) => {
+                                                const genderTotal = Object.values(sizes).reduce((s, q) => s + q, 0);
+                                                return (
+                                                    <div key={gender} className="border rounded-md overflow-hidden bg-white">
+                                                        <div className={`px-3 py-2 text-sm font-bold border-b flex justify-between items-center ${gender === 'Mujer' ? 'bg-pink-50 text-pink-700' : 'bg-blue-50 text-blue-700'}`}>
+                                                            <span>{gender}</span>
+                                                            <span className="text-[10px] bg-white/50 px-2 py-0.5 rounded-full">Total: {genderTotal}</span>
+                                                        </div>
+                                                        <Table>
+                                                            <TableHeader>
+                                                                <TableRow className="hover:bg-transparent">
+                                                                    <TableHead className="h-8">Talla</TableHead>
+                                                                    <TableHead className="h-8 text-right">Cantidad</TableHead>
+                                                                </TableRow>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                                {Object.entries(sizes).sort(([a], [b]) => a.localeCompare(b)).map(([size, count]) => (
+                                                                    <TableRow key={size} className="hover:bg-transparent">
+                                                                        <TableCell className="py-2 text-sm font-medium">{size}</TableCell>
+                                                                        <TableCell className="py-2 text-right font-bold text-base">{count}</TableCell>
+                                                                    </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
