@@ -130,6 +130,19 @@ export default function ProductionPage() {
                     <h1 className="text-3xl font-bold">Gestión de Pedidos</h1>
                     <p className="text-muted-foreground text-sm">Administra tus pedidos locales y pedidos recibidos en línea.</p>
                 </div>
+                <div className="w-[250px] bg-white rounded-md shadow-sm border">
+                    <Select value={selectedCollege} onValueChange={setSelectedCollege}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Filtrar por Colegio" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos los Colegios</SelectItem>
+                            {uniqueColleges.map(c => (
+                                <SelectItem key={c} value={c}>{c}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             <Tabs defaultValue="local" className="w-full">
@@ -152,19 +165,6 @@ export default function ProductionPage() {
                     <Card className="h-full border-none shadow-none bg-transparent">
                         <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
                             <CardTitle className="text-xl">Tablero de Producción Local</CardTitle>
-                            <div className="w-[250px]">
-                                <Select value={selectedCollege} onValueChange={setSelectedCollege}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Filtrar por Colegio" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">Todos los Colegios</SelectItem>
-                                        {uniqueColleges.map(c => (
-                                            <SelectItem key={c} value={c}>{c}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
                         </CardHeader>
 
                         <CardContent className="px-0">
