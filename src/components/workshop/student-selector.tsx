@@ -463,7 +463,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                             <Input
                                                 placeholder="Talla"
                                                 value={sizes[garment] || ''}
-                                                onChange={(e) => setSizes({ ...sizes, [garment]: e.target.value })}
+                                                onChange={(e) => setSizes({ ...sizes, [garment]: e.target.value.toUpperCase() })}
                                             />
                                         </div>
                                     ))}

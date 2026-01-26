@@ -107,7 +107,7 @@ export function OrderPanel({ student, items, onAddItem, onRemoveItem }: OrderPan
             productName: name,
             quantity: 1,
             price: price,
-            size: studentSize,
+            size: studentSize.toUpperCase(),
             type: 'sur_mesure'
         });
     };
