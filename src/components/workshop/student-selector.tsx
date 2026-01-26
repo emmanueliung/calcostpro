@@ -99,23 +99,34 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
     // When creating, if a filter is active, auto-fill the college name
     useEffect(() => {
         if (isCreateOpen && !editingStudent && selectedCollegeFilter !== "all") {
-            // Try to split logic if it's formatted as "Name (Course)"
             // Regex to extract Name and Course from "Name (Course)"
             const match = selectedCollegeFilter.match(/^(.*)\s\((.*)\)$/);
             if (match) {
-                setNewCollege(match[1]);
+                const name = match[1];
+                const course = match[2];
+                const found = availableColleges.find(c => c.name === name && (c.course || '') === course);
+                if (found) {
+                    setNewCollege(found.id);
+                } else {
+                    setNewCollege(name); // Fallback to name if ID not found
+                }
             } else {
-                setNewCollege(selectedCollegeFilter);
+                const found = availableColleges.find(c => c.name === selectedCollegeFilter);
+                if (found) {
+                    setNewCollege(found.id);
+                } else {
+                    setNewCollege(selectedCollegeFilter);
+                }
             }
         }
-    }, [isCreateOpen, editingStudent, selectedCollegeFilter]);
+    }, [isCreateOpen, editingStudent, selectedCollegeFilter, availableColleges]);
 
     // Handle Edit Click
     const handleEditClick = (e: React.MouseEvent, student: Student) => {
         e.stopPropagation();
         setEditingStudent(student);
         setNewName(student.name);
-        setNewCollege(student.college);
+        setNewCollege(student.collegeId || student.college); // Use ID if available, fallback to name for migration
         setSizes(student.sizes || {});
         setIsCreateOpen(true);
     };
@@ -132,9 +143,8 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
         }
     };
 
-    // Get the config for the selected college (newCollege is the Name string for now, or match by name)
-    // We try to match by name because 'newCollege' is a string in this form state
-    const selectedCollegeConfig = availableColleges.find(c => c.name === newCollege);
+    // Get the config for the selected college
+    const selectedCollegeConfig = availableColleges.find(c => c.id === newCollege || c.name === newCollege);
 
     // Determine which garments to show: Use College Config if available, otherwise fallback to default list
     const garmentsToShow = selectedCollegeConfig?.priceList?.map(item => item.name) || ['Pantalon', 'Saco', 'Camisa', 'Polo', 'Deportivo', 'Falda'];
@@ -147,9 +157,11 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
         setIsCreating(true);
         try {
-            // Find matched config to get hidden classroom/course
-            const matchedConfig = availableColleges.find(c => c.name === newCollege);
+            // Find matched config
+            const matchedConfig = availableColleges.find(c => c.id === newCollege || c.name === newCollege);
             const hiddenClassroom = matchedConfig?.course || '';
+            const collegeName = matchedConfig?.name || newCollege;
+            const collegeId = matchedConfig?.id || '';
 
             // Default measurements to 0 as we use sizes now
             const defaultMeasurements = { height: 0, chest: 0, waist: 0, hips: 0, sleeve: 0, leg: 0, shoulder: 0, neck: 0 };
@@ -163,7 +175,8 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
             const studentData = {
                 userId: user.uid,
                 name: newName.trim(),
-                college: newCollege.trim(),
+                college: collegeName,
+                collegeId: collegeId,
                 classroom: hiddenClassroom, // SAVING THE COURSE HERE
                 measurements: defaultMeasurements,
                 sizes: cleanSizes, // Save the sizes map
@@ -347,7 +360,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                         </SelectTrigger>
                                         <SelectContent>
                                             {availableColleges.map(c => (
-                                                <SelectItem key={c.id} value={c.name}>
+                                                <SelectItem key={c.id} value={c.id}>
                                                     {c.name} {c.course ? `(${c.course})` : ''}
                                                 </SelectItem>
                                             ))}

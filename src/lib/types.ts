@@ -98,6 +98,13 @@ export interface ProjectConfiguration {
   };
 }
 
+export interface EmailSettings {
+  senderName?: string;
+  replyTo?: string;
+  notifyWorkshopOnNewOrder: boolean;
+  sendConfirmationToCustomer: boolean;
+}
+
 export interface UserProfileData {
   name: string;
   email: string;
@@ -118,6 +125,7 @@ export interface UserProfileData {
     accessories: Material[];
     prints: Material[];
   };
+  emailSettings?: EmailSettings;
 }
 
 export interface Fitting {
@@ -152,6 +160,7 @@ export interface Student {
   id: string;
   userId: string; // Owner
   college: string;
+  collegeId?: string; // Reference to the price list (College)
   name: string; // "Dupont Léo"
   classroom?: string; // Clase/Curso
   measurements?: StudentMeasurements;

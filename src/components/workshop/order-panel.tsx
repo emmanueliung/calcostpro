@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
@@ -38,15 +38,40 @@ export function OrderPanel({ student, items, onAddItem, onRemoveItem }: OrderPan
                 setCollegeConfig(null);
                 return;
             }
-            // Try to find the college by name
-            // In a production app, we should store collegeId on the student to be robust.
-            // For now, we match by Name string as requested.
-            const q = query(collection(db, "colleges"), where("userId", "==", user.uid), where("name", "==", student.college));
-            const snapshot = await getDocs(q);
-            if (!snapshot.empty) {
-                setCollegeConfig({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as College);
-                setActiveTab("uniform");
-            } else {
+
+            try {
+                // 1. Try to find the college by ID if available
+                if (student.collegeId) {
+                    const docSnap = await getDoc(doc(db, "colleges", student.collegeId));
+                    if (docSnap.exists()) {
+                        setCollegeConfig({ id: docSnap.id, ...docSnap.data() } as College);
+                        setActiveTab("uniform");
+                        return;
+                    }
+                }
+
+                // 2. Fallback: Try to find the college by Name and Course (classroom)
+                // This is for backward compatibility or if collegeId is missing/invalid
+                const q = query(
+                    collection(db, "colleges"),
+                    where("userId", "==", user.uid),
+                    where("name", "==", student.college)
+                );
+
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    // Try to find the exact match with course/classroom
+                    const studentsCourse = student.classroom || '';
+                    const match = snapshot.docs.find(doc => (doc.data().course || '') === studentsCourse) || snapshot.docs[0];
+
+                    setCollegeConfig({ id: match.id, ...match.data() } as College);
+                    setActiveTab("uniform");
+                } else {
+                    setCollegeConfig(null);
+                    setActiveTab("custom");
+                }
+            } catch (error) {
+                console.error("Error fetching college config:", error);
                 setCollegeConfig(null);
                 setActiveTab("custom");
             }

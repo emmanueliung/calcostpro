@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
 
         const workshopEmail = userDoc.data()?.email;
         const workshopName = userDoc.data()?.name || 'Taller';
+        const emailSettings = userDoc.data()?.emailSettings;
 
         if (!workshopEmail) {
             console.error('Workshop email not found');
@@ -89,28 +90,38 @@ export async function POST(request: NextRequest) {
             college
         );
 
+        // Sender Configuration
+        const senderName = emailSettings?.senderName || workshopName;
+        const replyTo = emailSettings?.replyTo || workshopEmail;
+
         // Send customer confirmation
-        try {
-            await resend.emails.send({
-                from: `${workshopName} <noreply@calcostpro.com>`,
-                to: customer.email,
-                subject: customerEmail.subject,
-                html: customerEmail.html,
-            });
-        } catch (error) {
-            console.error('Error sending customer email:', error);
+        if (emailSettings === undefined || emailSettings.sendConfirmationToCustomer !== false) {
+            try {
+                await resend.emails.send({
+                    from: `${senderName} <noreply@calcostpro.com>`,
+                    to: customer.email,
+                    reply_to: replyTo,
+                    subject: customerEmail.subject,
+                    html: customerEmail.html,
+                });
+            } catch (error) {
+                console.error('Error sending customer email:', error);
+            }
         }
 
         // Send workshop notification
-        try {
-            await resend.emails.send({
-                from: 'CalcostPro Notificaciones <notifications@calcostpro.com>',
-                to: workshopEmail,
-                subject: workshopNotification.subject,
-                html: workshopNotification.html,
-            });
-        } catch (error) {
-            console.error('Error sending workshop email:', error);
+        if (emailSettings === undefined || emailSettings.notifyWorkshopOnNewOrder !== false) {
+            try {
+                await resend.emails.send({
+                    from: 'CalcostPro Notificaciones <notifications@calcostpro.com>',
+                    to: workshopEmail,
+                    reply_to: replyTo, // Optional: useful if workshop owner wants to reply to the system notification (though not common)
+                    subject: workshopNotification.subject,
+                    html: workshopNotification.html,
+                });
+            } catch (error) {
+                console.error('Error sending workshop email:', error);
+            }
         }
 
         return NextResponse.json({ success: true });
