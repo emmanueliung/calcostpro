@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BulkImportDialog } from './bulk-import-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 interface StudentSelectorProps {
     onSelectStudent: (student: Student) => void;
@@ -37,6 +38,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
     const [newName, setNewName] = useState('');
     const [newCollege, setNewCollege] = useState('');
     const [newGender, setNewGender] = useState<'Hombre' | 'Mujer'>('Hombre');
+    const [newNotes, setNewNotes] = useState('');
     // Classroom removed as requested
 
     // Sizes State
@@ -137,6 +139,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
         setNewName(student.name);
         setNewCollege(student.collegeId || student.college); // Use ID if available, fallback to name for migration
         setNewGender(student.gender || 'Hombre');
+        setNewNotes(student.notes || '');
         setSizes(student.sizes || {});
         setIsCreateOpen(true);
     };
@@ -189,6 +192,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 collegeId: collegeId,
                 gender: newGender,
                 classroom: hiddenClassroom, // SAVING THE COURSE HERE
+                notes: newNotes.trim(),
                 measurements: defaultMeasurements,
                 sizes: cleanSizes, // Save the sizes map
                 // Only set createdAt on creation
@@ -247,6 +251,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
         setNewName('');
         setNewCollege('');
         setNewGender('Hombre');
+        setNewNotes('');
         setSizes({});
         setEditingStudent(null);
     };
@@ -425,6 +430,15 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                     </SelectContent>
                                 </Select>
                             </div>
+                            <div className="space-y-2">
+                                <Label>Notas / Observaciones</Label>
+                                <Textarea
+                                    value={newNotes}
+                                    onChange={(e) => setNewNotes(e.target.value)}
+                                    placeholder="Información adicional..."
+                                    className="resize-none h-10"
+                                />
+                            </div>
                         </div>
 
                         <div className="border-t pt-4 mt-2">
@@ -464,8 +478,8 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                             {isCreating ? 'Guardando...' : (editingStudent ? 'Actualizar' : 'Guardar y Seleccionar')}
                         </Button>
                     </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
+                </DialogContent >
+            </Dialog >
+        </div >
     );
 }

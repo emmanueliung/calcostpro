@@ -85,16 +85,11 @@ export function PaymentPanel({ total, onProcessPayment, isProcessing }: PaymentP
     }, [total, amountToPay]);
 
     const handlePay = () => {
-        const amount = parseFloat(amountToPay);
-        if (isNaN(amount) || amount <= 0) return;
+        let amount = parseFloat(amountToPay);
+        if (isNaN(amount)) amount = 0;
+        if (amount < 0) return;
 
         // Pass the proof image if QR
-        // We need to update the prop signature or handle it.
-        // For MVP, we pass it as a third argument if the parent supports it, 
-        // OR we just log it for now and assume the parent will handle the 'transaction' record creation later?
-        // Wait, the parent `onProcessPayment` signature is `(amount: number, method: 'cash' | 'qr')`.
-        // We should update the parent to accept proof.
-        // For now, let's assume I will update the parent next.
         // @ts-ignore
         onProcessPayment(amount, method, proofImage);
     };
@@ -158,6 +153,15 @@ export function PaymentPanel({ total, onProcessPayment, isProcessing }: PaymentP
                                 </TabsList>
                             </Tabs>
                         </div>
+
+                        <Button
+                            className="w-full text-lg h-12 shadow-sm font-bold"
+                            size="lg"
+                            onClick={handlePay}
+                            disabled={isProcessing}
+                        >
+                            {isProcessing ? 'Procesando...' : `Cobrar ${amountToPay || '0'} Bs`}
+                        </Button>
 
                         {/* QR Display and Proof Upload */}
                         {method === 'qr' && (
@@ -229,16 +233,13 @@ export function PaymentPanel({ total, onProcessPayment, isProcessing }: PaymentP
                 </div>
 
                 {/* Bottom Action */}
-                <div className="mt-8 space-y-3">
+                {/* Bottom QR/Proof Info */}
+                <div className="mt-4 space-y-3">
                     {method === 'qr' && !proofImage && (
                         <div className="bg-yellow-50 text-yellow-700 p-2 rounded-md text-xs flex gap-2 items-start">
                             <p>⚠️ Se recomienda subir foto del comprobante.</p>
                         </div>
                     )}
-
-                    <Button className="w-full text-lg h-12" size="lg" onClick={handlePay} disabled={isProcessing || total <= 0 || !amountToPay}>
-                        {isProcessing ? 'Procesando...' : `Cobrar ${amountToPay || '0'} Bs`}
-                    </Button>
                 </div>
             </CardContent>
         </Card>

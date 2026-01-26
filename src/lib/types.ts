@@ -166,6 +166,7 @@ export interface Student {
   classroom?: string; // Clase/Curso
   measurements?: StudentMeasurements;
   sizes?: Record<string, string>; // e.g. { 'Pantalon': '38', 'Veste': 'M' }
+  notes?: string;
   createdAt: any;
 }
 
