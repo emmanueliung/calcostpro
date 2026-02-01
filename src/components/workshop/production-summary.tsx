@@ -9,8 +9,6 @@ import { Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useReactToPrint } from 'react-to-print';
 import { useRef, useState } from 'react';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 
 interface ProductionSummaryProps {
     orders: Order[];
@@ -25,7 +23,6 @@ interface SummaryItem {
 }
 
 export function ProductionSummary({ orders, collegeName }: ProductionSummaryProps) {
-    const [notes, setNotes] = useState('');
     const printRef = useRef<HTMLDivElement>(null);
     const handlePrint = useReactToPrint({
         content: () => printRef.current,
@@ -89,25 +86,6 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                         <p className="text-sm text-muted-foreground">Colegio: {collegeName === 'all' ? 'Todos los colegios' : collegeName}</p>
                         <p className="text-sm text-muted-foreground">Total: {totalGarments} prendas</p>
                     </div>
-
-                    {/* Pre-print Notes Input */}
-                    <div className="mb-6 no-print">
-                        <Label className="mb-2 block">Notas / Observaciones del Resumen</Label>
-                        <Textarea
-                            placeholder="Añade instrucciones para el confeccionista..."
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            className="bg-white"
-                        />
-                    </div>
-
-                    {/* Print Notes Display */}
-                    {notes && (
-                        <div className="hidden print:block mb-6 p-4 border rounded-md bg-slate-50 italic text-sm">
-                            <h4 className="font-bold not-italic mb-1 uppercase text-xs text-muted-foreground">Observaciones:</h4>
-                            {notes}
-                        </div>
-                    )}
 
                     {/* Compact Summary Totals Table */}
                     <div className="mb-8">
