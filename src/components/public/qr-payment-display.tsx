@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { QrCode, Camera, CheckCircle2, Upload } from 'lucide-react';
+import { QrCode, Camera, CheckCircle2, Upload, Download } from 'lucide-react';
 
 interface QrPaymentDisplayProps {
     qrCodeUrl: string | null;
@@ -62,6 +62,26 @@ export function QrPaymentDisplay({ qrCodeUrl, totalAmount, onProofUpload, proofU
                         <div className="flex justify-center bg-white p-4 border rounded-lg shadow-sm">
                             <img src={qrCodeUrl} alt="QR de Pago" className="h-48 w-48 object-contain" />
                         </div>
+
+                        <div className="flex justify-center">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex gap-2"
+                                onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = qrCodeUrl;
+                                    link.download = 'qr-pago.png';
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                }}
+                            >
+                                <Download className="w-4 h-4" />
+                                Descargar QR
+                            </Button>
+                        </div>
+
                     </div>
                 ) : (
                     <Alert className="bg-yellow-50 border-yellow-200">
