@@ -45,8 +45,21 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-        allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+        // Read: user must own the order
+        allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+        
+        // Update: user must own the order (check both resource and request.resource for batch updates)
+        allow update: if request.auth != null && (
+            resource.data.userId == request.auth.uid ||
+            request.resource.data.userId == request.auth.uid
+        );
+        
+        // Delete: user must own the order
+        allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+        
+        // Create: userId in new document must match authenticated user
         allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        
         // Allow public read of single order by ID (for payment page)
         allow get: if true;
     }

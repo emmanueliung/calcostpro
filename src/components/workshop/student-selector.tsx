@@ -234,6 +234,10 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
                         querySnapshot.forEach((docSnap) => {
                             const order = docSnap.data();
+                            console.log(`\n=== Checking order ${docSnap.id} ===`);
+                            console.log('Order items:', order.items);
+                            console.log('Available sizes for student:', cleanSizes);
+
                             let orderUpdated = false;
                             const updateData: any = {};
 
@@ -241,17 +245,23 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                             if (order.studentName !== newName.trim()) {
                                 updateData.studentName = newName.trim();
                                 orderUpdated = true;
+                                console.log(`Updating student name: "${order.studentName}" -> "${newName.trim()}"`);
                             }
                             // Note: College ID might be relevant too, but for display we check college string
                             // const matchedCollegeName = availableColleges.find(c => c.id === newCollege)?.name || newCollege;
                             if (order.college !== collegeName) {
                                 updateData.college = collegeName;
                                 orderUpdated = true;
+                                console.log(`Updating college: "${order.college}" -> "${collegeName}"`);
                             }
 
                             // 2. Sync Item Sizes
                             // @ts-ignore
-                            const updatedItems = order.items.map((item: any) => {
+                            const updatedItems = order.items.map((item: any, idx: number) => {
+                                console.log(`\n  Item ${idx}: ${item.productName}`);
+                                console.log(`    Type: ${item.type || 'undefined'}`);
+                                console.log(`    Current size: "${item.size || ''}"`);
+
                                 // If item is standard (sur_mesure OR missing type) and we have a new size for this product
                                 const isSurMesure = item.type === 'sur_mesure' || !item.type;
                                 const productName = item.productName.trim();
@@ -259,14 +269,20 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                 if (isSurMesure) {
                                     // Try exact match first
                                     let newSize = cleanSizes[productName];
+                                    console.log(`    Exact match for "${productName}": ${newSize || 'NOT FOUND'}`);
 
                                     // If no exact match, try case-insensitive match
                                     if (!newSize) {
+                                        console.log(`    Trying case-insensitive match...`);
                                         const matchingKey = Object.keys(cleanSizes).find(
                                             key => key.toLowerCase() === productName.toLowerCase()
                                         );
                                         if (matchingKey) {
                                             newSize = cleanSizes[matchingKey];
+                                            console.log(`    Case-insensitive match found: "${matchingKey}" -> "${newSize}"`);
+                                        } else {
+                                            console.log(`    No case-insensitive match found`);
+                                            console.log(`    Available keys:`, Object.keys(cleanSizes));
                                         }
                                     }
 
@@ -276,10 +292,16 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
                                         if (currentSize !== newSizeUpper) {
                                             orderUpdated = true;
-                                            console.log(`Updating order ${docSnap.id} item ${productName}: "${currentSize}" -> "${newSizeUpper}"`);
+                                            console.log(`    ✅ UPDATING: "${currentSize}" -> "${newSizeUpper}"`);
                                             return { ...item, size: newSizeUpper };
+                                        } else {
+                                            console.log(`    ⏭️ SKIPPING: Size already matches`);
                                         }
+                                    } else {
+                                        console.log(`    ⚠️ SKIPPING: No size found for this product`);
                                     }
+                                } else {
+                                    console.log(`    ⏭️ SKIPPING: Not a sur_mesure item`);
                                 }
                                 return item;
                             });
