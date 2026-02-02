@@ -220,9 +220,14 @@ export default function ProductionPage() {
                                                         </TableCell>
                                                         <TableCell>
                                                             <div className="flex flex-col gap-1">
-                                                                {order.items.map((item, idx) => (
+                                                                {Object.entries(
+                                                                    order.items.reduce((acc, item) => {
+                                                                        acc[item.productName] = (acc[item.productName] || 0) + item.quantity;
+                                                                        return acc;
+                                                                    }, {} as Record<string, number>)
+                                                                ).map(([name, qty], idx) => (
                                                                     <span key={idx} className="text-xs bg-slate-100 px-2 py-0.5 rounded-full w-fit">
-                                                                        {item.productName} ({item.quantity})
+                                                                        {name} ({qty})
                                                                     </span>
                                                                 ))}
                                                             </div>
@@ -313,9 +318,14 @@ export default function ProductionPage() {
                                     <p className="text-xs text-muted-foreground">{paymentOrder.college}</p>
                                 </div>
                                 <div className="space-y-2">
-                                    {paymentOrder.items.map((item, i) => (
+                                    {Object.entries(
+                                        paymentOrder.items.reduce((acc, item) => {
+                                            acc[item.productName] = (acc[item.productName] || 0) + item.quantity;
+                                            return acc;
+                                        }, {} as Record<string, number>)
+                                    ).map(([name, qty], i) => (
                                         <div key={i} className="flex justify-between text-sm">
-                                            <span>{item.productName} x{item.quantity}</span>
+                                            <span>{name} x{qty}</span>
                                         </div>
                                     ))}
                                 </div>
