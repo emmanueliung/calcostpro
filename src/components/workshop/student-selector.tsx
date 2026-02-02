@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, doc, updateDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { Student, StudentMeasurements, College } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -211,6 +211,53 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 // Update local selection if needed
                 if (selectedStudentId === editingStudent.id) {
                     onSelectStudent({ ...editingStudent, ...studentData, sizes: cleanSizes });
+                }
+
+                // NEW: Update open orders for this student with the new sizes
+                try {
+                    const ordersRef = collection(db, "orders");
+                    const q = query(
+                        ordersRef,
+                        where("studentId", "==", editingStudent.id),
+                        where("status", "in", ["pending", "in_production"])
+                    );
+                    const querySnapshot = await getDocs(q);
+
+                    if (!querySnapshot.empty) {
+                        const batch = writeBatch(db);
+                        let batchCount = 0;
+
+                        querySnapshot.forEach((docSnap) => {
+                            const order = docSnap.data();
+                            let orderUpdated = false;
+
+                            // @ts-ignore
+                            const updatedItems = order.items.map((item: any) => {
+                                // If item is standard (sur_mesure) and we have a new size for this product
+                                if (item.type === 'sur_mesure' && cleanSizes[item.productName]) {
+                                    if (item.size !== cleanSizes[item.productName]) {
+                                        orderUpdated = true;
+                                        return { ...item, size: cleanSizes[item.productName] };
+                                    }
+                                }
+                                return item;
+                            });
+
+                            if (orderUpdated) {
+                                batch.update(docSnap.ref, { items: updatedItems });
+                                batchCount++;
+                            }
+                        });
+
+                        if (batchCount > 0) {
+                            await batch.commit();
+                            console.log(`Updated ${batchCount} orders with new sizes.`);
+                            toast({ title: "Pedidos actualizados", description: `${batchCount} pedidos pendientes fueron actualizados con las nuevas tallas.` });
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error syncing sizes to orders:", err);
+                    // Non-blocking error
                 }
             } else {
                 // CREATE
