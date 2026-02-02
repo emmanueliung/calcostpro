@@ -221,6 +221,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                     // We now include 'ready' as well, as production might need corrections before delivery
                     const q = query(
                         ordersRef,
+                        where("userId", "==", user.uid),
                         where("studentId", "==", editingStudent.id),
                         where("status", "in", ["pending", "in_production", "ready"])
                     );
