@@ -233,10 +233,13 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
                             // @ts-ignore
                             const updatedItems = order.items.map((item: any) => {
-                                // If item is standard (sur_mesure) and we have a new size for this product
-                                if (item.type === 'sur_mesure' && cleanSizes[item.productName]) {
+                                // If item is standard (sur_mesure OR missing type) and we have a new size for this product
+                                const isSurMesure = item.type === 'sur_mesure' || !item.type;
+
+                                if (isSurMesure && cleanSizes[item.productName]) {
                                     if (item.size !== cleanSizes[item.productName]) {
                                         orderUpdated = true;
+                                        console.log(`Updating order ${docSnap.id} item ${item.productName}: ${item.size} -> ${cleanSizes[item.productName]}`);
                                         return { ...item, size: cleanSizes[item.productName] };
                                     }
                                 }
