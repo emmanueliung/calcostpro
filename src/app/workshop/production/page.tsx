@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader } from '@/components/ui/loader';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Trash2, DollarSign, ShoppingBag, ClipboardList } from 'lucide-react';
+import { Trash2, DollarSign, ShoppingBag, ClipboardList, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PaymentPanel } from '@/components/workshop/payment-panel';
@@ -28,6 +29,7 @@ export default function ProductionPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedCollege, setSelectedCollege] = useState<string>("all");
+    const [searchTerm, setSearchTerm] = useState("");
 
     // Payment Modal State
     const [paymentOrder, setPaymentOrder] = useState<Order | null>(null);
@@ -118,30 +120,43 @@ export default function ProductionPage() {
     const uniqueColleges = Array.from(new Set(orders.map(o => o.college).filter(Boolean))).sort();
 
     const filteredOrders = orders.filter(order => {
-        return selectedCollege === "all" || order.college === selectedCollege;
+        const matchesCollege = selectedCollege === "all" || order.college === selectedCollege;
+        const matchesSearch = order.studentName.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesCollege && matchesSearch;
     });
 
     if (isLoading) return <Loader text="Cargando pedidos..." />;
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold">Gestión de Pedidos</h1>
                     <p className="text-muted-foreground text-sm">Administra tus pedidos locales y pedidos recibidos en línea.</p>
                 </div>
-                <div className="w-[250px] bg-white rounded-md shadow-sm border">
-                    <Select value={selectedCollege} onValueChange={setSelectedCollege}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Filtrar por Colegio" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todos los Colegios</SelectItem>
-                            {uniqueColleges.map(c => (
-                                <SelectItem key={c} value={c}>{c}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <div className="flex flex-col md:flex-row gap-3">
+                    <div className="relative w-full md:w-[300px]">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Buscar estudiante..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-8 bg-white"
+                        />
+                    </div>
+                    <div className="w-full md:w-[250px] bg-white rounded-md shadow-sm border">
+                        <Select value={selectedCollege} onValueChange={setSelectedCollege}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Filtrar por Colegio" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todos los Colegios</SelectItem>
+                                {uniqueColleges.map(c => (
+                                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
             </div>
 
@@ -165,6 +180,9 @@ export default function ProductionPage() {
                     <Card className="h-full border-none shadow-none bg-transparent">
                         <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
                             <CardTitle className="text-xl">Tablero de Producción Local</CardTitle>
+                            <Badge variant="outline" className="text-sm">
+                                {filteredOrders.length} pedidos encontrados
+                            </Badge>
                         </CardHeader>
 
                         <CardContent className="px-0">
