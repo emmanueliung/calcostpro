@@ -179,11 +179,13 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
             // Default measurements to 0 as we use sizes now
             const defaultMeasurements = { height: 0, chest: 0, waist: 0, hips: 0, sleeve: 0, leg: 0, shoulder: 0, neck: 0 };
 
-            // Clean empty sizes
+            // Clean empty sizes and ensure uppercase for consistency
             const cleanSizes: Record<string, string> = {};
             Object.keys(sizes).forEach(key => {
-                if (sizes[key]?.trim()) cleanSizes[key] = sizes[key].trim();
+                if (sizes[key]?.trim()) cleanSizes[key] = sizes[key].trim().toUpperCase();
             });
+
+            console.log('Saving student sizes:', cleanSizes);
 
             const studentData = {
                 userId: user.uid,
@@ -224,6 +226,8 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                     );
                     const querySnapshot = await getDocs(q);
 
+                    console.log(`Found ${querySnapshot.size} orders to potentially update for student ${editingStudent.id}`);
+
                     if (!querySnapshot.empty) {
                         const batch = writeBatch(db);
                         let batchCount = 0;
@@ -252,11 +256,29 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                 const isSurMesure = item.type === 'sur_mesure' || !item.type;
                                 const productName = item.productName.trim();
 
-                                if (isSurMesure && cleanSizes[productName]) {
-                                    if (item.size !== cleanSizes[productName]) {
-                                        orderUpdated = true;
-                                        console.log(`Updating order ${docSnap.id} item ${productName}: ${item.size} -> ${cleanSizes[productName]}`);
-                                        return { ...item, size: cleanSizes[productName] };
+                                if (isSurMesure) {
+                                    // Try exact match first
+                                    let newSize = cleanSizes[productName];
+
+                                    // If no exact match, try case-insensitive match
+                                    if (!newSize) {
+                                        const matchingKey = Object.keys(cleanSizes).find(
+                                            key => key.toLowerCase() === productName.toLowerCase()
+                                        );
+                                        if (matchingKey) {
+                                            newSize = cleanSizes[matchingKey];
+                                        }
+                                    }
+
+                                    if (newSize) {
+                                        const currentSize = (item.size || '').toUpperCase();
+                                        const newSizeUpper = newSize.toUpperCase();
+
+                                        if (currentSize !== newSizeUpper) {
+                                            orderUpdated = true;
+                                            console.log(`Updating order ${docSnap.id} item ${productName}: "${currentSize}" -> "${newSizeUpper}"`);
+                                            return { ...item, size: newSizeUpper };
+                                        }
                                     }
                                 }
                                 return item;
