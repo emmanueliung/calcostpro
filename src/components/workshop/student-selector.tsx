@@ -83,7 +83,6 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
     }, [user, db]);
 
     // Generate filter options based on availableColleges
-    // We also include student groups that might not be in availableColleges (legacy/orphaned)
     const studentGroups = Array.from(new Set(students.map(s => {
         return s.classroom ? `${s.college} (${s.classroom})` : s.college;
     }))).filter(Boolean);
@@ -110,7 +109,6 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
     // When creating, if a filter is active, auto-fill the college name
     useEffect(() => {
         if (isCreateOpen && !editingStudent && selectedCollegeFilter !== "all") {
-            // Regex to extract Name and Course from "Name (Course)"
             const match = selectedCollegeFilter.match(/^(.*)\s\((.*)\)$/);
             if (match) {
                 const name = match[1];
@@ -119,7 +117,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 if (found) {
                     setNewCollege(found.id);
                 } else {
-                    setNewCollege(name); // Fallback to name if ID not found
+                    setNewCollege(name); // Fallback
                 }
             } else {
                 const found = availableColleges.find(c => c.name === selectedCollegeFilter);
@@ -137,7 +135,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
         e.stopPropagation();
         setEditingStudent(student);
         setNewName(student.name);
-        setNewCollege(student.collegeId || student.college); // Use ID if available, fallback to name for migration
+        setNewCollege(student.collegeId || student.college);
         setNewGender(student.gender || 'Hombre');
         setNewNotes(student.notes || '');
         setSizes(student.sizes || {});
@@ -156,10 +154,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
         }
     };
 
-    // Get the config for the selected college
     const selectedCollegeConfig = availableColleges.find(c => c.id === newCollege || c.name === newCollege);
-
-    // Determine which garments to show: Use College Config if available, otherwise fallback to default list
     const garmentsToShow = selectedCollegeConfig?.priceList?.map(item => item.name) || ['Pantalon', 'Saco', 'Camisa', 'Polo', 'Deportivo', 'Falda'];
 
     const handleSaveStudent = async () => {
@@ -170,22 +165,19 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
         setIsCreating(true);
         try {
-            // Find matched config
             const matchedConfig = availableColleges.find(c => c.id === newCollege || c.name === newCollege);
             const hiddenClassroom = matchedConfig?.course || '';
             const collegeName = matchedConfig?.name || newCollege;
             const collegeId = matchedConfig?.id || '';
 
-            // Default measurements to 0 as we use sizes now
             const defaultMeasurements = { height: 0, chest: 0, waist: 0, hips: 0, sleeve: 0, leg: 0, shoulder: 0, neck: 0 };
 
-            // Clean empty sizes and ensure uppercase for consistency
             const cleanSizes: Record<string, string> = {};
             Object.keys(sizes).forEach(key => {
                 if (sizes[key]?.trim()) cleanSizes[key] = sizes[key].trim().toUpperCase();
             });
 
-            console.log('Saving student sizes:', cleanSizes);
+            console.log('[DEBUG] Saving student sizes:', cleanSizes);
 
             const studentData = {
                 userId: user.uid,
@@ -193,15 +185,14 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 college: collegeName,
                 collegeId: collegeId,
                 gender: newGender,
-                classroom: hiddenClassroom, // SAVING THE COURSE HERE
+                classroom: hiddenClassroom,
                 notes: newNotes.trim(),
                 measurements: defaultMeasurements,
-                sizes: cleanSizes, // Save the sizes map
-                // Only set createdAt on creation
+                sizes: cleanSizes,
             };
 
             if (editingStudent) {
-                // UPDATE
+                // 1. UPDATE STUDENT DOCUMENT
                 const docRef = doc(db, "students", editingStudent.id);
                 // @ts-ignore
                 await updateDoc(docRef, {
@@ -210,124 +201,109 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 });
                 toast({ title: 'Estudiante actualizado', description: `${newName} ha sido modificado.` });
 
-                // Update local selection if needed
                 if (selectedStudentId === editingStudent.id) {
                     onSelectStudent({ ...editingStudent, ...studentData, sizes: cleanSizes });
                 }
 
-                // NEW: Update open orders for this student with the new sizes AND denormalized data
+                // 2. UPDATE ORDERS SYNC (with simplified query & local filtering)
                 try {
+                    console.log(`[DEBUG] Starting sync to orders for student ${editingStudent.id}`);
                     const ordersRef = collection(db, "orders");
-                    // We now include 'ready' as well, as production might need corrections before delivery
+
+                    // The simplest query (by userId) is guaranteed to pass security rules
                     const q = query(
                         ordersRef,
-                        where("userId", "==", user.uid),
-                        where("studentId", "==", editingStudent.id),
-                        where("status", "in", ["pending", "in_production", "ready"])
+                        where("userId", "==", user.uid)
                     );
-                    const querySnapshot = await getDocs(q);
 
-                    console.log(`Found ${querySnapshot.size} orders to potentially update for student ${editingStudent.id}`);
+                    console.log(`[DEBUG] Fetching all orders for user ${user.uid} to filter locally...`);
+                    const querySnapshot = await getDocs(q);
+                    console.log(`[DEBUG] Successfully fetched ${querySnapshot.size} total orders.`);
 
                     if (!querySnapshot.empty) {
                         const batch = writeBatch(db);
                         let batchCount = 0;
 
-                        querySnapshot.forEach((docSnap) => {
+                        // Filter relevant orders locally
+                        const relevantOrders = querySnapshot.docs.filter(docSnap => {
+                            const data = docSnap.data();
+                            return data.studentId === editingStudent.id &&
+                                ["pending", "in_production", "ready"].includes(data.status);
+                        });
+
+                        console.log(`[DEBUG] Found ${relevantOrders.length} relevant orders to check.`);
+
+                        relevantOrders.forEach((docSnap) => {
                             const order = docSnap.data();
-                            console.log(`\n=== Checking order ${docSnap.id} ===`);
-                            console.log('Order items:', order.items);
-                            console.log('Available sizes for student:', cleanSizes);
-
                             let orderUpdated = false;
-                            const updateData: any = {};
+                            const updateData: any = {
+                                userId: user.uid, // Explicitly include userId to satisfy security rules
+                                updatedAt: serverTimestamp()
+                            };
 
-                            // 1. Sync Denormalized Data (Name, College)
+                            // Sync Denormalized Data
                             if (order.studentName !== newName.trim()) {
                                 updateData.studentName = newName.trim();
                                 orderUpdated = true;
-                                console.log(`Updating student name: "${order.studentName}" -> "${newName.trim()}"`);
+                                console.log(`[DEBUG] Order ${docSnap.id}: Updating name`);
                             }
-                            // Note: College ID might be relevant too, but for display we check college string
-                            // const matchedCollegeName = availableColleges.find(c => c.id === newCollege)?.name || newCollege;
                             if (order.college !== collegeName) {
                                 updateData.college = collegeName;
                                 orderUpdated = true;
-                                console.log(`Updating college: "${order.college}" -> "${collegeName}"`);
+                                console.log(`[DEBUG] Order ${docSnap.id}: Updating college`);
+                            }
+                            if (order.studentGender !== newGender) {
+                                updateData.studentGender = newGender;
+                                orderUpdated = true;
+                                console.log(`[DEBUG] Order ${docSnap.id}: Updating gender`);
                             }
 
-                            // 2. Sync Item Sizes
+                            // Sync Item Sizes
                             // @ts-ignore
-                            const updatedItems = order.items.map((item: any, idx: number) => {
-                                console.log(`\n  Item ${idx}: ${item.productName}`);
-                                console.log(`    Type: ${item.type || 'undefined'}`);
-                                console.log(`    Current size: "${item.size || ''}"`);
-
-                                // If item is standard (sur_mesure OR missing type) and we have a new size for this product
+                            const updatedItems = order.items.map((item: any) => {
                                 const isSurMesure = item.type === 'sur_mesure' || !item.type;
                                 const productName = item.productName.trim();
 
                                 if (isSurMesure) {
-                                    // Try exact match first
                                     let newSize = cleanSizes[productName];
-                                    console.log(`    Exact match for "${productName}": ${newSize || 'NOT FOUND'}`);
-
-                                    // If no exact match, try case-insensitive match
                                     if (!newSize) {
-                                        console.log(`    Trying case-insensitive match...`);
                                         const matchingKey = Object.keys(cleanSizes).find(
                                             key => key.toLowerCase() === productName.toLowerCase()
                                         );
-                                        if (matchingKey) {
-                                            newSize = cleanSizes[matchingKey];
-                                            console.log(`    Case-insensitive match found: "${matchingKey}" -> "${newSize}"`);
-                                        } else {
-                                            console.log(`    No case-insensitive match found`);
-                                            console.log(`    Available keys:`, Object.keys(cleanSizes));
-                                        }
+                                        if (matchingKey) newSize = cleanSizes[matchingKey];
                                     }
 
                                     if (newSize) {
                                         const currentSize = (item.size || '').toUpperCase();
                                         const newSizeUpper = newSize.toUpperCase();
-
                                         if (currentSize !== newSizeUpper) {
                                             orderUpdated = true;
-                                            console.log(`    ✅ UPDATING: "${currentSize}" -> "${newSizeUpper}"`);
+                                            console.log(`[DEBUG] Order ${docSnap.id} - ${productName}: "${currentSize}" -> "${newSizeUpper}"`);
                                             return { ...item, size: newSizeUpper };
-                                        } else {
-                                            console.log(`    ⏭️ SKIPPING: Size already matches`);
                                         }
-                                    } else {
-                                        console.log(`    ⚠️ SKIPPING: No size found for this product`);
                                     }
-                                } else {
-                                    console.log(`    ⏭️ SKIPPING: Not a sur_mesure item`);
                                 }
                                 return item;
                             });
 
                             if (orderUpdated) {
-                                // If we only updated header data, we still use the original items unless items changed
-                                // But updatedItems maps over all items, so it's safe to always overwrite 'items' if we detected a size change.
-                                // To be precise: If only name changed, updatedItems is identical to order.items.
-                                // So we can always perform the update.
                                 updateData.items = updatedItems;
-
                                 batch.update(docSnap.ref, updateData);
                                 batchCount++;
                             }
                         });
 
                         if (batchCount > 0) {
+                            console.log(`[DEBUG] Committing ${batchCount} order updates...`);
                             await batch.commit();
-                            console.log(`Updated ${batchCount} orders with new sizes/data.`);
-                            toast({ title: "Pedidos actualizados", description: `${batchCount} pedidos fueron sincronizados (Nombres, Colegio, Tallas).` });
+                            console.log(`[DEBUG] Batch commit successful.`);
+                            toast({ title: "Pedidos actualizados", description: `${batchCount} pedidos fueron sincronizados.` });
+                        } else {
+                            console.log(`[DEBUG] No updates required for relevant orders.`);
                         }
                     }
                 } catch (err) {
                     console.error("Error syncing to orders:", err);
-                    // Non-blocking error
                 }
             } else {
                 // CREATE
@@ -337,7 +313,6 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                     createdAt: serverTimestamp()
                 });
 
-                // Auto-select the new student (re-fetching locally, but we can construct the object)
                 const createdStudent: Student = {
                     id: docRef.id,
                     ...studentData,
@@ -375,8 +350,6 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
     return (
         <div className="flex flex-col h-full gap-4">
-
-            {/* Top Controls: Filter & Bulk Import */}
             <div className="flex gap-2">
                 <Select value={selectedCollegeFilter} onValueChange={setSelectedCollegeFilter}>
                     <SelectTrigger className="w-full">
@@ -397,7 +370,6 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 />
             </div>
 
-            {/* Search Bar */}
             <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -408,7 +380,6 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 />
             </div>
 
-            {/* Student List */}
             <ScrollArea className="flex-1 border rounded-md">
                 <div className="p-2 space-y-4">
                     {filteredStudents.length === 0 ? (
@@ -485,7 +456,6 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 </div>
             </ScrollArea>
 
-            {/* Create/Edit Modal */}
             <Dialog open={isCreateOpen} onOpenChange={(open) => {
                 setIsCreateOpen(open);
                 if (!open) resetForm();
