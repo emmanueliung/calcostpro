@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useReactToPrint } from 'react-to-print';
 import { useRef, useState } from 'react';
 
@@ -24,9 +25,11 @@ interface SummaryItem {
 
 export function ProductionSummary({ orders, collegeName }: ProductionSummaryProps) {
     const printRef = useRef<HTMLDivElement>(null);
+    const [selectedGarment, setSelectedGarment] = useState<string>("all");
+
     const handlePrint = useReactToPrint({
         content: () => printRef.current,
-        documentTitle: `Resumen_Produccion_${collegeName}`,
+        documentTitle: `Produccion_${selectedGarment === 'all' ? 'Completa' : selectedGarment}_${collegeName}`,
     });
 
     const groupedSummary = useMemo(() => {
@@ -36,6 +39,10 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
         orders.forEach(order => {
             order.items.forEach(item => {
                 const name = item.productName;
+
+                // Filter by garment if selected
+                if (selectedGarment !== "all" && name !== selectedGarment) return;
+
                 const gender = order.studentGender || 'Hombre';
                 const size = (item.size || 'N/A').toUpperCase();
 
@@ -48,6 +55,12 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
         });
 
         return data;
+    }, [orders, selectedGarment]);
+
+    const uniqueGarments = useMemo(() => {
+        const garments = new Set<string>();
+        orders.forEach(o => o.items.forEach(i => garments.add(i.productName)));
+        return Array.from(garments).sort();
     }, [orders]);
 
     const totalGarments = useMemo(() => {
@@ -69,12 +82,25 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                         <p className="text-sm text-muted-foreground">{collegeName === 'all' ? 'Todos los colegios' : collegeName}</p>
                     </div>
                     <div className="flex items-center gap-3">
+                        <div className="w-[200px]">
+                            <Select value={selectedGarment} onValueChange={setSelectedGarment}>
+                                <SelectTrigger className="h-8">
+                                    <SelectValue placeholder="Filtrar por prenda" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todas las prendas</SelectItem>
+                                    {uniqueGarments.map(g => (
+                                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <Button variant="outline" size="sm" onClick={handlePrint}>
                             <Printer className="h-4 w-4 mr-2" />
-                            Imprimir Resumen
+                            Imprimir
                         </Button>
                         <Badge variant="secondary" className="px-3 py-1 text-sm font-bold">
-                            {totalGarments} prendas en total
+                            {totalGarments} prendas
                         </Badge>
                     </div>
                 </div>
@@ -82,9 +108,19 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
             <CardContent className="p-6" ref={printRef}>
                 <div className="print:p-8">
                     <div className="hidden print:block mb-6">
-                        <h1 className="text-2xl font-bold">Resumen de Producción</h1>
-                        <p className="text-sm text-muted-foreground">Colegio: {collegeName === 'all' ? 'Todos los colegios' : collegeName}</p>
-                        <p className="text-sm text-muted-foreground">Total: {totalGarments} prendas</p>
+                        <h1 className="text-2xl font-bold uppercase">
+                            Producción: {selectedGarment === 'all' ? 'GENERAL' : selectedGarment}
+                        </h1>
+                        <div className="flex justify-between items-end mt-2 border-b-2 border-black pb-2">
+                            <div>
+                                <p className="text-sm font-medium">Colegio / Proyecto:</p>
+                                <p className="text-lg font-bold">{collegeName === 'all' ? 'Todos los colegios' : collegeName}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-sm font-medium">Total Items:</p>
+                                <p className="text-xl font-bold">{totalGarments}</p>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Compact Summary Totals Table */}
