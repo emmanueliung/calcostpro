@@ -213,13 +213,14 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                     onSelectStudent({ ...editingStudent, ...studentData, sizes: cleanSizes });
                 }
 
-                // NEW: Update open orders for this student with the new sizes
+                // NEW: Update open orders for this student with the new sizes AND denormalized data
                 try {
                     const ordersRef = collection(db, "orders");
+                    // We now include 'ready' as well, as production might need corrections before delivery
                     const q = query(
                         ordersRef,
                         where("studentId", "==", editingStudent.id),
-                        where("status", "in", ["pending", "in_production"])
+                        where("status", "in", ["pending", "in_production", "ready"])
                     );
                     const querySnapshot = await getDocs(q);
 
@@ -230,36 +231,57 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                         querySnapshot.forEach((docSnap) => {
                             const order = docSnap.data();
                             let orderUpdated = false;
+                            const updateData: any = {};
 
+                            // 1. Sync Denormalized Data (Name, College)
+                            if (order.studentName !== newName.trim()) {
+                                updateData.studentName = newName.trim();
+                                orderUpdated = true;
+                            }
+                            // Note: College ID might be relevant too, but for display we check college string
+                            // const matchedCollegeName = availableColleges.find(c => c.id === newCollege)?.name || newCollege;
+                            if (order.college !== collegeName) {
+                                updateData.college = collegeName;
+                                orderUpdated = true;
+                            }
+
+                            // 2. Sync Item Sizes
                             // @ts-ignore
                             const updatedItems = order.items.map((item: any) => {
                                 // If item is standard (sur_mesure OR missing type) and we have a new size for this product
                                 const isSurMesure = item.type === 'sur_mesure' || !item.type;
+                                const productName = item.productName.trim();
 
-                                if (isSurMesure && cleanSizes[item.productName]) {
-                                    if (item.size !== cleanSizes[item.productName]) {
+                                if (isSurMesure && cleanSizes[productName]) {
+                                    if (item.size !== cleanSizes[productName]) {
                                         orderUpdated = true;
-                                        console.log(`Updating order ${docSnap.id} item ${item.productName}: ${item.size} -> ${cleanSizes[item.productName]}`);
-                                        return { ...item, size: cleanSizes[item.productName] };
+                                        console.log(`Updating order ${docSnap.id} item ${productName}: ${item.size} -> ${cleanSizes[productName]}`);
+                                        return { ...item, size: cleanSizes[productName] };
                                     }
                                 }
                                 return item;
                             });
 
                             if (orderUpdated) {
-                                batch.update(docSnap.ref, { items: updatedItems });
+                                // If we only updated header data, we still use the original items unless items changed
+                                // But updatedItems maps over all items, so it's safe to always overwrite 'items' if we detected a size change.
+                                // To be precise: If only name changed, updatedItems is identical to order.items.
+                                // So we can always perform the update.
+                                updateData.items = updatedItems;
+
+                                batch.update(docSnap.ref, updateData);
                                 batchCount++;
                             }
                         });
 
                         if (batchCount > 0) {
                             await batch.commit();
-                            console.log(`Updated ${batchCount} orders with new sizes.`);
-                            toast({ title: "Pedidos actualizados", description: `${batchCount} pedidos pendientes fueron actualizados con las nuevas tallas.` });
+                            console.log(`Updated ${batchCount} orders with new sizes/data.`);
+                            toast({ title: "Pedidos actualizados", description: `${batchCount} pedidos fueron sincronizados (Nombres, Colegio, Tallas).` });
                         }
                     }
                 } catch (err) {
-                    console.error("Error syncing sizes to orders:", err);
+                    console.error("Error syncing to orders:", err);
                     // Non-blocking error
                 }
             } else {
