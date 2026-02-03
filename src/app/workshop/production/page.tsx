@@ -329,10 +329,11 @@ export default function ProductionPage() {
                             <p className="text-2xl font-bold">
                                 {(
                                     filteredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0) +
-                                    publicOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+                                    publicOrders.filter(o => selectedCollege === "all" || o.college === selectedCollege)
+                                        .reduce((sum, o) => sum + (o.totalAmount || 0), 0)
                                 ).toLocaleString()} Bs
                             </p>
-                            <p className="text-[10px] text-muted-foreground">Incluye pedido online</p>
+                            <p className="text-[10px] text-muted-foreground">Incluye local + online</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -346,7 +347,8 @@ export default function ProductionPage() {
                             <p className="text-2xl font-bold text-green-600">
                                 {(
                                     filteredOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0) +
-                                    publicOrders.reduce((sum, o) => (o.status !== 'pending_payment' && o.status !== 'cancelled') ? sum + (o.totalAmount || 0) : sum, 0)
+                                    publicOrders.filter(o => (selectedCollege === "all" || o.college === selectedCollege) && (o.status !== 'pending_payment' && o.status !== 'cancelled'))
+                                        .reduce((sum, o) => sum + (o.totalAmount || 0), 0)
                                 ).toLocaleString()} Bs
                             </p>
                             <p className="text-[10px] text-muted-foreground">Pagos verificados</p>
@@ -363,7 +365,8 @@ export default function ProductionPage() {
                             <p className="text-2xl font-bold text-red-600">
                                 {(
                                     filteredOrders.reduce((sum, o) => sum + (o.balance || 0), 0) +
-                                    publicOrders.reduce((sum, o) => (o.status === 'pending_payment') ? sum + (o.totalAmount || 0) : sum, 0)
+                                    publicOrders.filter(o => (selectedCollege === "all" || o.college === selectedCollege) && o.status === 'pending_payment')
+                                        .reduce((sum, o) => sum + (o.totalAmount || 0), 0)
                                 ).toLocaleString()} Bs
                             </p>
                             <p className="text-[10px] text-muted-foreground">Por cobrar</p>
@@ -382,8 +385,15 @@ export default function ProductionPage() {
                         {uniqueColleges.map(c => {
                             const isProject = Object.values(projectConfigs).some(p => p.projectDetails.projectName === c);
                             const projectOrders = orders.filter(o => o.college === c);
-                            const totalAmount = projectOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-                            const pendingBalance = projectOrders.reduce((sum, o) => sum + (o.balance || 0), 0);
+                            const projectPublicOrders = publicOrders.filter(o => o.college === c);
+
+                            const totalLocalAmount = projectOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+                            const totalOnlineAmount = projectPublicOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+                            const totalAmount = totalLocalAmount + totalOnlineAmount;
+
+                            const pendingLocalBalance = projectOrders.reduce((sum, o) => sum + (o.balance || 0), 0);
+                            const pendingOnlineAmount = projectPublicOrders.filter(o => o.status === 'pending_payment').reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+                            const totalPending = pendingLocalBalance + pendingOnlineAmount;
 
                             return (
                                 <Card
@@ -403,16 +413,22 @@ export default function ProductionPage() {
                                     <CardContent className="space-y-2">
                                         <div className="flex justify-between text-xs">
                                             <span className="text-muted-foreground">Pedidos:</span>
-                                            <span className="font-bold">{projectOrders.length}</span>
+                                            <span className="font-bold">{projectOrders.length + projectPublicOrders.length}</span>
                                         </div>
+                                        {projectPublicOrders.length > 0 && (
+                                            <div className="text-[10px] text-muted-foreground -mt-1 flex gap-2">
+                                                <span>{projectOrders.length} local</span>
+                                                <span>{projectPublicOrders.length} online</span>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between text-xs">
                                             <span className="text-muted-foreground">Venta:</span>
                                             <span className="font-bold">{totalAmount.toLocaleString()} Bs</span>
                                         </div>
-                                        {pendingBalance > 0 && (
+                                        {totalPending > 0 && (
                                             <div className="flex justify-between text-xs text-red-600">
                                                 <span>Pendiente:</span>
-                                                <span className="font-bold">{pendingBalance.toLocaleString()} Bs</span>
+                                                <span className="font-bold">{totalPending.toLocaleString()} Bs</span>
                                             </div>
                                         )}
                                     </CardContent>
