@@ -11,6 +11,7 @@ import { HandCoins, QrCode, CheckCircle2, Camera, Upload } from 'lucide-react';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'; // Import needed firestore functions
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { compressImage } from '@/lib/utils';
 
 interface PaymentPanelProps {
     total: number;
@@ -61,16 +62,18 @@ export function PaymentPanel({ total, onProcessPayment, isProcessing }: PaymentP
         const reader = new FileReader();
         reader.onloadend = async () => {
             const base64String = reader.result as string;
-            setSavedQrCode(base64String);
-
             try {
+                const compressed = await compressImage(base64String, 500, 500, 0.6); // Higher compression for QR
+                setSavedQrCode(compressed);
+
                 // Save immediately
                 await setDoc(doc(db, "settings", `workshop_${user.uid}`), {
-                    qrCodeUrl: base64String,
+                    qrCodeUrl: compressed,
                     updatedAt: serverTimestamp()
                 }, { merge: true });
             } catch (e) {
                 console.error("Error saving QR:", e);
+                setSavedQrCode(base64String);
             }
         };
         reader.readAsDataURL(file);
@@ -101,8 +104,15 @@ export function PaymentPanel({ total, onProcessPayment, isProcessing }: PaymentP
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setProofImage(reader.result as string);
+            reader.onloadend = async () => {
+                const base64String = reader.result as string;
+                try {
+                    const compressed = await compressImage(base64String);
+                    setProofImage(compressed);
+                } catch (e) {
+                    console.error("Error compressing proof:", e);
+                    setProofImage(base64String);
+                }
             };
             reader.readAsDataURL(file);
         }

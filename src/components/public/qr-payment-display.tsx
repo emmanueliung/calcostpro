@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QrCode, Camera, CheckCircle2, Upload, Download } from 'lucide-react';
+import { compressImage } from '@/lib/utils';
 
 interface QrPaymentDisplayProps {
     qrCodeUrl: string | null;
@@ -23,8 +24,15 @@ export function QrPaymentDisplay({ qrCodeUrl, totalAmount, onProofUpload, proofU
         if (file) {
             setUploading(true);
             const reader = new FileReader();
-            reader.onloadend = () => {
-                onProofUpload(reader.result as string);
+            reader.onloadend = async () => {
+                const base64 = reader.result as string;
+                try {
+                    const compressed = await compressImage(base64);
+                    onProofUpload(compressed);
+                } catch (err) {
+                    console.error('Error compressing image:', err);
+                    onProofUpload(base64); // Fallback to original if compression fails
+                }
                 setUploading(false);
             };
             reader.readAsDataURL(file);
