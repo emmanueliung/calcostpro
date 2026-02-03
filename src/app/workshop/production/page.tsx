@@ -11,16 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader } from '@/components/ui/loader';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Trash2, DollarSign, ShoppingBag, ClipboardList, Search, ArrowRight, ArrowLeft, Image as ImageIcon, FileText } from 'lucide-react';
+import { Trash2, DollarSign, ShoppingBag, ClipboardList, Search, ArrowRight, ArrowLeft, Image as ImageIcon, FileText, Pencil, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PaymentPanel } from '@/components/workshop/payment-panel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OnlineOrdersView } from '@/components/workshop/online-orders-view';
 import { ProductionSummary } from '@/components/workshop/production-summary';
-import { Printer } from 'lucide-react';
 
 export default function ProductionPage() {
     const { user, isUserLoading } = useUser();
@@ -35,6 +35,11 @@ export default function ProductionPage() {
     const [paymentOrder, setPaymentOrder] = useState<Order | null>(null);
     const [contentOpen, setContentOpen] = useState(false);
     const [projectConfigs, setProjectConfigs] = useState<Record<string, ProjectConfiguration>>({});
+
+    // Edit Paid Amount State
+    const [editAmountOrder, setEditAmountOrder] = useState<Order | null>(null);
+    const [isEditAmountDialogOpen, setIsEditAmountDialogOpen] = useState(false);
+    const [tempPaidAmount, setTempPaidAmount] = useState<number>(0);
 
     useEffect(() => {
         const fetchProjects = async () => {
@@ -142,6 +147,30 @@ export default function ProductionPage() {
         } catch (error) {
             console.error(error);
             toast({ variant: "destructive", title: "Error al registrar pago" });
+        }
+    };
+
+    const handleUpdatePaidAmount = async () => {
+        if (!editAmountOrder || !user) return;
+
+        try {
+            const newPaidAmount = tempPaidAmount;
+            const newBalance = (editAmountOrder.totalAmount || 0) - newPaidAmount;
+
+            const orderRef = doc(db, "orders", editAmountOrder.id);
+            await updateDoc(orderRef, {
+                paidAmount: newPaidAmount,
+                balance: newBalance,
+                status: newBalance <= 0 ? 'ready' : editAmountOrder.status,
+                updatedAt: serverTimestamp()
+            });
+
+            toast({ title: "Acompte corrigé", description: `Monto pagado actualizado a ${newPaidAmount} Bs.` });
+            setIsEditAmountDialogOpen(false);
+            setEditAmountOrder(null);
+        } catch (error) {
+            console.error(error);
+            toast({ variant: "destructive", title: "Error al corregir acompte" });
         }
     };
 
@@ -469,6 +498,18 @@ export default function ProductionPage() {
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
+                                                                    className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                                                    onClick={() => {
+                                                                        setEditAmountOrder(order);
+                                                                        setTempPaidAmount(order.paidAmount || 0);
+                                                                        setIsEditAmountDialogOpen(true);
+                                                                    }}
+                                                                >
+                                                                    <Pencil className="w-4 h-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
                                                                     className="w-8 h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                                                     onClick={() => handleDeleteOrder(order.id)}
                                                                 >
@@ -545,6 +586,43 @@ export default function ProductionPage() {
                             </div>
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isEditAmountDialogOpen} onOpenChange={setIsEditAmountDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Corregir Acompte</DialogTitle>
+                        <DialogDescription>
+                            Ajusta el monto pagado hasta ahora por <strong>{editAmountOrder?.studentName}</strong>.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="paidAmount">Monto Pagado (Bs)</Label>
+                            <Input
+                                id="paidAmount"
+                                type="number"
+                                value={tempPaidAmount}
+                                onChange={(e) => setTempPaidAmount(Number(e.target.value))}
+                                className="bg-white"
+                            />
+                        </div>
+                        <div className="bg-slate-50 p-4 rounded-md space-y-1 text-sm border">
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Total del pedido:</span>
+                                <span className="font-bold">{editAmountOrder?.totalAmount} Bs</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Nuevo Saldo:</span>
+                                <span className="font-bold text-red-600">{(editAmountOrder?.totalAmount || 0) - tempPaidAmount} Bs</span>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditAmountDialogOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleUpdatePaidAmount}>Guardar Cambios</Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>
