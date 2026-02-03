@@ -5,7 +5,7 @@ import { Order, OrderItem } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Printer, ShoppingBag } from 'lucide-react';
+import { Printer, ShoppingBag, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useReactToPrint } from 'react-to-print';
@@ -37,13 +37,17 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
     useEffect(() => {
         const fetchNeededProjects = async () => {
             const projectIds = new Set<string>();
+            const collegeNames = new Set<string>();
+
             orders.forEach(o => {
                 if (o.projectId) projectIds.add(o.projectId);
+                if (o.college) collegeNames.add(o.college);
             });
 
             const newConfigs: Record<string, ProjectConfiguration> = { ...projectConfigs };
             let hasNew = false;
 
+            // 1. Fetch by Explicit Project ID
             for (const pid of Array.from(projectIds)) {
                 if (!newConfigs[pid]) {
                     try {
@@ -55,6 +59,32 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                     } catch (e) {
                         console.error("Error fetching project config", pid, e);
                     }
+                }
+            }
+
+            // 2. Fetch by College Name (as fallback)
+            // We only do this if we haven't already linked a project via ID for that college
+            const collegesToSearch = Array.from(collegeNames).filter(name => {
+                // Skip if name is "all" or generic
+                if (name === 'all') return false;
+                // Skip if we already have a project with this name in configs
+                return !Object.values(newConfigs).some(p => p.projectDetails.projectName === name);
+            });
+
+            if (collegesToSearch.length > 0) {
+                // Since Firestore doesn't support easy "contains" or multiple queries in one batch easily here without 'in'
+                // and we might have many colleges, we'll fetch recently created projects or just try to find them.
+                // For simplicity and performance, we'll query for projects where projectDetails.projectName matches
+                const { collection, query, where, getDocs } = await import('firebase/firestore');
+                for (const name of collegesToSearch) {
+                    const q = query(collection(db, "projects"), where("projectDetails.projectName", "==", name));
+                    const snap = await getDocs(q);
+                    snap.forEach(d => {
+                        if (!newConfigs[d.id]) {
+                            newConfigs[d.id] = { id: d.id, ...d.data() } as ProjectConfiguration;
+                            hasNew = true;
+                        }
+                    });
                 }
             }
 
@@ -115,14 +145,22 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
 
         orders.forEach(order => {
             const pid = order.projectId;
-            const project = pid ? projectConfigs[pid] : null;
+            let project = pid ? projectConfigs[pid] : null;
+
+            // Fallback: If no projectId, find project by college name
+            if (!project && order.college) {
+                project = Object.values(projectConfigs).find(p => p.projectDetails.projectName === order.college) || null;
+            }
 
             order.items.forEach(item => {
                 // Apply garment filter to materials too
                 if (selectedGarment !== "all" && item.productName !== selectedGarment) return;
 
                 if (project) {
-                    const lineItem = project.lineItems.find(li => li.name === item.productName);
+                    // Try to find matching line item by name
+                    const lineItem = project.lineItems.find(li =>
+                        li.name.toLowerCase().trim() === item.productName.toLowerCase().trim()
+                    );
                     if (lineItem) {
                         const size = item.size || 'M';
                         const factor = FITTING_SIZE_FACTORS[size] || 1.0;
@@ -297,7 +335,7 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                         </div>
                     )}
 
-                    {Object.keys(materialAggregates).length > 0 && (
+                    {Object.keys(materialAggregates).length > 0 ? (
                         <div className="mt-12 pt-8 border-t-2 border-slate-200">
                             <h3 className="text-xl font-black uppercase tracking-tight mb-4 flex items-center gap-2">
                                 <ShoppingBag className="h-5 w-5" />
@@ -325,6 +363,16 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                                         ))}
                                     </TableBody>
                                 </Table>
+                            </div>
+                        </div>
+                    ) : orders.length > 0 && (
+                        <div className="mt-12 pt-8 border-t border-dashed">
+                            <div className="bg-slate-50 p-4 rounded-lg flex items-center gap-3 text-slate-600">
+                                <AlertCircle className="h-5 w-5 text-slate-400" />
+                                <p className="text-xs italic">
+                                    Para el cálculo de materiales, vincule este grupo a un <strong>Proyecto</strong> con ficha técnica.
+                                    Asegúrese de que el nombre del Proyecto sea "<strong>{collegeName}</strong>" y que las prendas coincidan.
+                                </p>
                             </div>
                         </div>
                     )}
