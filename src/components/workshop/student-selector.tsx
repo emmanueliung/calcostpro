@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, doc, updateDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
-import { Student, StudentMeasurements, College } from '@/lib/types';
+import { Student, StudentMeasurements, College, ProjectConfiguration, Fitting } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, UserPlus, User as UserIcon, Edit, Trash2 } from 'lucide-react';
@@ -15,6 +15,7 @@ import { BulkImportDialog } from './bulk-import-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface StudentSelectorProps {
     onSelectStudent: (student: Student) => void;
@@ -27,9 +28,13 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
     const { toast } = useToast();
     const [students, setStudents] = useState<Student[]>([]);
 
+    // Mode State: 'school' | 'project'
+    const [sourceType, setSourceType] = useState<'school' | 'project'>('school');
+
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCollegeFilter, setSelectedCollegeFilter] = useState<string>("all");
+    const [selectedProjectFilter, setSelectedProjectFilter] = useState<string>("all");
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -46,20 +51,35 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
     // Fetch colleges for the dropdown
     const [availableColleges, setAvailableColleges] = useState<College[]>([]);
+    const [availableProjects, setAvailableProjects] = useState<ProjectConfiguration[]>([]);
+    const [projectFittings, setProjectFittings] = useState<Student[]>([]);
 
     useEffect(() => {
         if (!user) return;
-        const q = query(collection(db, "colleges"), where("userId", "==", user.uid));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+
+        // Fetch Colleges
+        const qColleges = query(collection(db, "colleges"), where("userId", "==", user.uid));
+        const unsubColleges = onSnapshot(qColleges, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as College));
             setAvailableColleges(data);
         });
-        return () => unsubscribe();
+
+        // Fetch Projects
+        const qProjects = query(collection(db, "projects"), where("userId", "==", user.uid));
+        const unsubProjects = onSnapshot(qProjects, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProjectConfiguration));
+            setAvailableProjects(data);
+        });
+
+        return () => {
+            unsubColleges();
+            unsubProjects();
+        };
     }, [user, db]);
 
-    // Fetch students
+    // Fetch students (School Mode)
     useEffect(() => {
-        if (!user) return;
+        if (!user || sourceType !== 'school') return;
 
         const q = query(
             collection(db, "students"),
@@ -67,7 +87,11 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
+            const data = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                sourceType: 'school' // Explicitly set source type
+            } as Student));
 
             // Client-side sort by createdAt descending
             data.sort((a, b) => {
@@ -80,7 +104,48 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
         });
 
         return () => unsubscribe();
-    }, [user, db]);
+    }, [user, db, sourceType]);
+
+    // Fetch Fittings (Project Mode) - Only when a project is selected to optimize
+    useEffect(() => {
+        if (!user || sourceType !== 'project' || selectedProjectFilter === 'all') {
+            setProjectFittings([]);
+            return;
+        }
+
+        const project = availableProjects.find(p => p.id === selectedProjectFilter || p.projectDetails.projectName === selectedProjectFilter);
+        if (!project) return;
+
+        const q = collection(db, "projects", project.id, "fittings");
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => {
+                const fitting = doc.data() as Fitting;
+                // Map Fitting to Student interface
+                return {
+                    id: doc.id,
+                    userId: user.uid,
+                    college: project.projectDetails.projectName,
+                    collegeId: project.id,
+                    name: fitting.personName,
+                    gender: 'Hombre', // Default or need to infer? Project might have gender info? For now default.
+                    classroom: 'Proyecto',
+                    measurements: {}, // Project usually uses sizes directly
+                    sizes: fitting.sizes || {},
+                    notes: fitting.email,
+                    createdAt: fitting.createdAt,
+                    sourceType: 'project',
+                    projectId: project.id
+                } as Student;
+            });
+
+            // Sort by name for projects usually
+            data.sort((a, b) => a.name.localeCompare(b.name));
+            setProjectFittings(data);
+        });
+
+        return () => unsubscribe();
+    }, [user, db, sourceType, selectedProjectFilter, availableProjects]);
 
     // Generate filter options based on availableColleges
     const studentGroups = Array.from(new Set(students.map(s => {
@@ -93,14 +158,22 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
     const allFilterOptions = Array.from(new Set([...configuredGroups, ...studentGroups])).sort();
 
-    const filteredStudents = students.filter(student => {
+    // Determine which list to show
+    const displayList = sourceType === 'school' ? students : projectFittings;
+
+    const filteredStudents = displayList.filter(student => {
         const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             student.college.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const studentGroup = student.classroom ? `${student.college} (${student.classroom})` : student.college;
-        const matchesCollege = selectedCollegeFilter === "all" || studentGroup === selectedCollegeFilter;
-
-        return matchesSearch && matchesCollege;
+        if (sourceType === 'school') {
+            const studentGroup = student.classroom ? `${student.college} (${student.classroom})` : student.college;
+            const matchesCollege = selectedCollegeFilter === "all" || studentGroup === selectedCollegeFilter;
+            return matchesSearch && matchesCollege;
+        } else {
+            // For project mode, we are already filtering by fetching only the selected project's fittings
+            // But we still apply local search
+            return matchesSearch;
+        }
     });
 
     // Editing State
@@ -350,24 +423,47 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
     return (
         <div className="flex flex-col h-full gap-4">
-            <div className="flex gap-2">
-                <Select value={selectedCollegeFilter} onValueChange={setSelectedCollegeFilter}>
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Todos los colegios" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Todos los Colegios</SelectItem>
-                        {allFilterOptions.map(group => (
-                            <SelectItem key={group} value={group}>{group}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+            <Tabs value={sourceType} onValueChange={(v: any) => setSourceType(v)} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="school">Colegio / Taller</TabsTrigger>
+                    <TabsTrigger value="project">Proyecto / Empresa</TabsTrigger>
+                </TabsList>
+            </Tabs>
 
-                <BulkImportDialog
-                    defaultCollege={selectedCollegeFilter !== "all" ? selectedCollegeFilter : ''}
-                    availableColleges={availableColleges}
-                    onSuccess={() => toast({ title: "Lista actualizada" })}
-                />
+            <div className="flex gap-2">
+                {sourceType === 'school' ? (
+                    <Select value={selectedCollegeFilter} onValueChange={setSelectedCollegeFilter}>
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Todos los colegios" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos los Colegios</SelectItem>
+                            {allFilterOptions.map(group => (
+                                <SelectItem key={group} value={group}>{group}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                ) : (
+                    <Select value={selectedProjectFilter} onValueChange={setSelectedProjectFilter}>
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Seleccionar Proyecto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Seleccionar Proyecto...</SelectItem>
+                            {availableProjects.map(p => (
+                                <SelectItem key={p.id} value={p.id}>{p.projectDetails.projectName}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
+
+                {sourceType === 'school' && (
+                    <BulkImportDialog
+                        defaultCollege={selectedCollegeFilter !== "all" ? selectedCollegeFilter : ''}
+                        availableColleges={availableColleges}
+                        onSuccess={() => toast({ title: "Lista actualizada" })}
+                    />
+                )}
             </div>
 
             <div className="relative">
@@ -384,12 +480,16 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 <div className="p-2 space-y-4">
                     {filteredStudents.length === 0 ? (
                         <p className="text-sm text-center text-muted-foreground py-4">
-                            No se encontraron estudiantes.
+                            {sourceType === 'project' && selectedProjectFilter === 'all'
+                                ? "Seleccione un proyecto para ver los participantes."
+                                : "No se encontraron resultados."}
                         </p>
                     ) : (
                         Object.entries(
                             filteredStudents.reduce((acc, student) => {
-                                const group = student.classroom ? `${student.college} (${student.classroom})` : student.college;
+                                const group = sourceType === 'school'
+                                    ? (student.classroom ? `${student.college} (${student.classroom})` : student.college)
+                                    : student.college; // For projects, just group by project name (should be single group mostly)
                                 if (!acc[group]) acc[group] = [];
                                 acc[group].push(student);
                                 return acc;
@@ -460,18 +560,20 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 setIsCreateOpen(open);
                 if (!open) resetForm();
             }}>
-                <DialogTrigger asChild>
-                    <Button className="w-full" variant="outline" onClick={() => {
-                        setEditingStudent(null);
-                        resetForm();
-                    }}>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        Nuevo Estudiante
-                    </Button>
-                </DialogTrigger>
+                {sourceType === 'school' && (
+                    <DialogTrigger asChild>
+                        <Button className="w-full" variant="outline" onClick={() => {
+                            setEditingStudent(null);
+                            resetForm();
+                        }}>
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Nuevo Estudiante
+                        </Button>
+                    </DialogTrigger>
+                )}
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>{editingStudent ? 'Editar Estudiante' : 'Registrar Nuevo Estudiante'}</DialogTitle>
+                        <DialogTitle>{editingStudent ? 'Editar Registro' : 'Registrar Nuevo Estudiante'}</DialogTitle>
                     </DialogHeader>
 
                     <div className="grid gap-4 py-4">
@@ -481,11 +583,11 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                 <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ej: Juan Pérez" />
                             </div>
                             <div className="space-y-2">
-                                <Label>Colegio *</Label>
+                                <Label>{sourceType === 'school' ? 'Colegio *' : 'Proyecto *'}</Label>
                                 {availableColleges.length > 0 ? (
-                                    <Select value={newCollege} onValueChange={setNewCollege}>
+                                    <Select value={newCollege} onValueChange={setNewCollege} disabled={sourceType === 'project'}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Seleccionar Colegio" />
+                                            <SelectValue placeholder={sourceType === 'school' ? "Seleccionar Colegio" : "Proyecto del participante"} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {availableColleges.map(c => (

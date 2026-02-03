@@ -168,6 +168,8 @@ export interface Student {
   sizes?: Record<string, string>; // e.g. { 'Pantalon': '38', 'Veste': 'M' }
   notes?: string;
   createdAt: any;
+  sourceType?: 'school' | 'project';
+  projectId?: string;
 }
 
 export type OrderType = 'sur_mesure' | 'stock';

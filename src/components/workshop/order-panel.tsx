@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, ShoppingBag, Ruler } from 'lucide-react';
-import { OrderItem, Student, College } from '@/lib/types';
+import { OrderItem, Student, College, ProjectConfiguration } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface OrderPanelProps {
@@ -25,6 +25,9 @@ export function OrderPanel({ student, items, onAddItem, onRemoveItem }: OrderPan
 
     // College Config State
     const [collegeConfig, setCollegeConfig] = useState<College | null>(null);
+    const [projectConfig, setProjectConfig] = useState<ProjectConfiguration | null>(null);
+
+    // Custom Order State
 
     // Custom Order State
     const [garmentType, setGarmentType] = useState('Pantalon');
@@ -36,7 +39,26 @@ export function OrderPanel({ student, items, onAddItem, onRemoveItem }: OrderPan
         const fetchCollegeConfig = async () => {
             if (!user || !student) {
                 setCollegeConfig(null);
+                setProjectConfig(null);
                 return;
+            }
+
+            if (student.sourceType === 'project') {
+                setCollegeConfig(null);
+                if (student.projectId) {
+                    try {
+                        const docSnap = await getDoc(doc(db, "projects", student.projectId));
+                        if (docSnap.exists()) {
+                            setProjectConfig({ id: docSnap.id, ...docSnap.data() } as ProjectConfiguration);
+                            setActiveTab("uniform");
+                        }
+                    } catch (e) {
+                        console.error("Error fetching project:", e);
+                    }
+                }
+                return;
+            } else {
+                setProjectConfig(null);
             }
 
             try {
@@ -143,25 +165,49 @@ export function OrderPanel({ student, items, onAddItem, onRemoveItem }: OrderPan
                         </TabsList>
 
                         <TabsContent value="uniform" className="mt-4 min-h-[160px]">
-                            {collegeConfig && collegeConfig.priceList && collegeConfig.priceList.length > 0 ? (
-                                <div className="grid grid-cols-2 gap-2">
-                                    {collegeConfig.priceList.map((item, idx) => (
-                                        <Button
-                                            key={idx}
-                                            variant="outline"
-                                            className="h-auto py-3 flex flex-col items-start gap-1 text-left bg-white hover:bg-primary/5 hover:border-primary"
-                                            onClick={() => handleAddConfiguredItem(item.name, item.price)}
-                                        >
-                                            <span className="font-semibold">{item.name}</span>
-                                            <span className="text-xs text-muted-foreground">Precio: {item.price} Bs</span>
-                                        </Button>
-                                    ))}
-                                </div>
+                            {student.sourceType === 'project' ? (
+                                // Project View
+                                projectConfig && projectConfig.lineItems && projectConfig.lineItems.length > 0 ? (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {projectConfig.lineItems.map((item, idx) => (
+                                            <Button
+                                                key={idx}
+                                                variant="outline"
+                                                className="h-auto py-3 flex flex-col items-start gap-1 text-left bg-white hover:bg-primary/5 hover:border-primary"
+                                                onClick={() => handleAddConfiguredItem(item.name, 0)} // Price 0 for projects (global billing usually)
+                                            >
+                                                <span className="font-semibold">{item.name}</span>
+                                                <span className="text-xs text-muted-foreground">Proyecto</span>
+                                            </Button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-6 text-muted-foreground text-sm">
+                                        <p>No hay prendas configuradas para este proyecto.</p>
+                                    </div>
+                                )
                             ) : (
-                                <div className="text-center py-6 text-muted-foreground text-sm">
-                                    <p>No hay precios configurados para <strong>{student.college}</strong>.</p>
-                                    <p className="text-xs mt-2">Vaya a Configuración para añadir prendas.</p>
-                                </div>
+                                // College View
+                                collegeConfig && collegeConfig.priceList && collegeConfig.priceList.length > 0 ? (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {collegeConfig.priceList.map((item, idx) => (
+                                            <Button
+                                                key={idx}
+                                                variant="outline"
+                                                className="h-auto py-3 flex flex-col items-start gap-1 text-left bg-white hover:bg-primary/5 hover:border-primary"
+                                                onClick={() => handleAddConfiguredItem(item.name, item.price)}
+                                            >
+                                                <span className="font-semibold">{item.name}</span>
+                                                <span className="text-xs text-muted-foreground">Precio: {item.price} Bs</span>
+                                            </Button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-6 text-muted-foreground text-sm">
+                                        <p>No hay precios configurados para <strong>{student.college}</strong>.</p>
+                                        <p className="text-xs mt-2">Vaya a Configuración para añadir prendas.</p>
+                                    </div>
+                                )
                             )}
                         </TabsContent>
 
