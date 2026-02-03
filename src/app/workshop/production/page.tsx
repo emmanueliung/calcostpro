@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useUser, useFirestore } from '@/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { Order, OrderStatus, ProjectConfiguration } from '@/lib/types';
+import { Order, OrderStatus, ProjectConfiguration, PublicOrder } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -17,16 +17,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PaymentPanel } from '@/components/workshop/payment-panel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OnlineOrdersView } from '@/components/workshop/online-orders-view';
 import { ProductionSummary } from '@/components/workshop/production-summary';
+import { OnlineOrdersBadge } from '@/components/workshop/online-orders-badge';
 
 export default function ProductionPage() {
     const { user, isUserLoading } = useUser();
     const db = useFirestore();
     const { toast } = useToast();
     const [orders, setOrders] = useState<Order[]>([]);
+    const [publicOrders, setPublicOrders] = useState<PublicOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedCollege, setSelectedCollege] = useState<string>("all");
     const [searchTerm, setSearchTerm] = useState("");
@@ -95,6 +98,27 @@ export default function ProductionPage() {
         }, (error) => {
             console.error("Error loading orders:", error);
             setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [user, isUserLoading, db]);
+
+    useEffect(() => {
+        if (isUserLoading || !user) return;
+
+        const q = query(
+            collection(db, "public_orders"),
+            where("userId", "==", user.uid)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as PublicOrder));
+            setPublicOrders(data);
+        }, (error) => {
+            console.error("Error loading public orders:", error);
         });
 
         return () => unsubscribe();
@@ -302,7 +326,13 @@ export default function ProductionPage() {
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Venta Total</p>
-                            <p className="text-2xl font-bold">{filteredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0).toLocaleString()} Bs</p>
+                            <p className="text-2xl font-bold">
+                                {(
+                                    filteredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0) +
+                                    publicOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+                                ).toLocaleString()} Bs
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">Incluye pedido online</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -313,7 +343,13 @@ export default function ProductionPage() {
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Total Cobrado</p>
-                            <p className="text-2xl font-bold text-green-600">{filteredOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0).toLocaleString()} Bs</p>
+                            <p className="text-2xl font-bold text-green-600">
+                                {(
+                                    filteredOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0) +
+                                    publicOrders.reduce((sum, o) => (o.status !== 'pending_payment' && o.status !== 'cancelled') ? sum + (o.totalAmount || 0) : sum, 0)
+                                ).toLocaleString()} Bs
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">Pagos verificados</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -324,7 +360,13 @@ export default function ProductionPage() {
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Saldo Pendiente</p>
-                            <p className="text-2xl font-bold text-red-600">{filteredOrders.reduce((sum, o) => sum + (o.balance || 0), 0).toLocaleString()} Bs</p>
+                            <p className="text-2xl font-bold text-red-600">
+                                {(
+                                    filteredOrders.reduce((sum, o) => sum + (o.balance || 0), 0) +
+                                    publicOrders.reduce((sum, o) => (o.status === 'pending_payment') ? sum + (o.totalAmount || 0) : sum, 0)
+                                ).toLocaleString()} Bs
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">Por cobrar</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -390,6 +432,7 @@ export default function ProductionPage() {
                     <TabsTrigger value="online" className="py-2 px-6 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
                         <ShoppingBag className="h-4 w-4" />
                         Tienda Online
+                        <OnlineOrdersBadge />
                     </TabsTrigger>
                     <TabsTrigger value="summary" className="py-2 px-6 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
                         <Printer className="h-4 w-4" />
@@ -398,6 +441,25 @@ export default function ProductionPage() {
                 </TabsList>
 
                 <TabsContent value="local" className="space-y-6 p-0 mt-0">
+                    {publicOrders.filter(o => o.status === 'pending_payment').length > 0 && (
+                        <Alert className="bg-blue-50 border-blue-200 mb-4 animate-in fade-in slide-in-from-top-2">
+                            <ShoppingBag className="h-4 w-4 text-blue-600" />
+                            <AlertTitle className="text-blue-800 font-bold">Tienes pedidos online pendientes</AlertTitle>
+                            <AlertDescription className="text-blue-700 flex justify-between items-center">
+                                Hay {publicOrders.filter(o => o.status === 'pending_payment').length} pedidos esperando validación de pago.
+                                <Button
+                                    variant="link"
+                                    className="text-blue-800 font-bold p-0 h-auto"
+                                    onClick={() => {
+                                        const onlineTab = document.querySelector('[value="online"]') as HTMLElement;
+                                        if (onlineTab) onlineTab.click();
+                                    }}
+                                >
+                                    Ver Tienda Online <ArrowRight className="ml-1 h-3 w-3" />
+                                </Button>
+                            </AlertDescription>
+                        </Alert>
+                    )}
                     <Card className="h-full border-none shadow-none bg-transparent">
                         <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
                             <CardTitle className="text-xl">Tablero de Producción Local</CardTitle>

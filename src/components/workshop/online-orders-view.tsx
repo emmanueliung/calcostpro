@@ -184,6 +184,12 @@ export function OnlineOrdersView() {
                 </Card>
             </div>
 
+            {/* Debug Info */}
+            <div className="p-2 border rounded bg-slate-50 text-[10px] text-muted-foreground font-mono flex gap-4">
+                <span>UID: {user?.uid || 'N/A'}</span>
+                <span>Total docs found: {orders.length}</span>
+            </div>
+
             {/* Orders Table */}
             <Card>
                 <CardHeader>

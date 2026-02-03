@@ -93,12 +93,13 @@ export async function POST(request: NextRequest) {
         // Sender Configuration
         const senderName = emailSettings?.senderName || workshopName;
         const replyTo = emailSettings?.replyTo || workshopEmail;
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'CalcostPro <notifications@resend.dev>';
 
         // Send customer confirmation
         if (emailSettings === undefined || emailSettings.sendConfirmationToCustomer !== false) {
             try {
                 await resend.emails.send({
-                    from: `${senderName} <noreply@calcostpro.com>`,
+                    from: fromEmail,
                     to: customer.email,
                     reply_to: replyTo,
                     subject: customerEmail.subject,
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
         if (emailSettings === undefined || emailSettings.notifyWorkshopOnNewOrder !== false) {
             try {
                 await resend.emails.send({
-                    from: 'CalcostPro Notificaciones <notifications@calcostpro.com>',
+                    from: fromEmail,
                     to: workshopEmail,
                     reply_to: replyTo, // Optional: useful if workshop owner wants to reply to the system notification (though not common)
                     subject: workshopNotification.subject,
