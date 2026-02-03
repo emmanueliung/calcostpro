@@ -212,6 +212,8 @@ export interface Order {
   balance: number; // total - paid
   createdAt: any;
   updatedAt: any;
+  type?: 'project_fitting';
+  projectId?: string;
 }
 
 export type PaymentMethod = 'cash' | 'qr';

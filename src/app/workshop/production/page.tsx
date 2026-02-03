@@ -160,6 +160,42 @@ export default function ProductionPage() {
                 </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+                <Card className="bg-white border shadow-sm">
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <div className="p-3 bg-blue-50 rounded-full">
+                            <ShoppingBag className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Venta Total</p>
+                            <p className="text-2xl font-bold">{filteredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0).toLocaleString()} Bs</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-white border shadow-sm">
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <div className="p-3 bg-green-50 rounded-full">
+                            <DollarSign className="h-6 w-6 text-green-600" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Total Cobrado</p>
+                            <p className="text-2xl font-bold text-green-600">{filteredOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0).toLocaleString()} Bs</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-white border shadow-sm">
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <div className="p-3 bg-red-50 rounded-full">
+                            <ClipboardList className="h-6 w-6 text-red-600" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Saldo Pendiente</p>
+                            <p className="text-2xl font-bold text-red-600">{filteredOrders.reduce((sum, o) => sum + (o.balance || 0), 0).toLocaleString()} Bs</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
             <Tabs defaultValue="local" className="w-full">
                 <TabsList className="bg-white border p-1 h-auto mb-6">
                     <TabsTrigger value="local" className="py-2 px-6 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">

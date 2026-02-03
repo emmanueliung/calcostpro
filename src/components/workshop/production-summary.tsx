@@ -5,11 +5,15 @@ import { Order, OrderItem } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Printer } from 'lucide-react';
+import { Printer, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useReactToPrint } from 'react-to-print';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import { useFirestore } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { ProjectConfiguration } from '@/lib/types';
+import { FITTING_SIZE_FACTORS } from '@/lib/calculation-helpers';
 
 interface ProductionSummaryProps {
     orders: Order[];
@@ -24,8 +28,41 @@ interface SummaryItem {
 }
 
 export function ProductionSummary({ orders, collegeName }: ProductionSummaryProps) {
+    const db = useFirestore();
     const printRef = useRef<HTMLDivElement>(null);
     const [selectedGarment, setSelectedGarment] = useState<string>("all");
+    const [projectConfigs, setProjectConfigs] = useState<Record<string, ProjectConfiguration>>({});
+
+    // Fetch projects used in these orders
+    useEffect(() => {
+        const fetchNeededProjects = async () => {
+            const projectIds = new Set<string>();
+            orders.forEach(o => {
+                if (o.projectId) projectIds.add(o.projectId);
+            });
+
+            const newConfigs: Record<string, ProjectConfiguration> = { ...projectConfigs };
+            let hasNew = false;
+
+            for (const pid of Array.from(projectIds)) {
+                if (!newConfigs[pid]) {
+                    try {
+                        const snap = await getDoc(doc(db, "projects", pid));
+                        if (snap.exists()) {
+                            newConfigs[pid] = { id: snap.id, ...snap.data() } as ProjectConfiguration;
+                            hasNew = true;
+                        }
+                    } catch (e) {
+                        console.error("Error fetching project config", pid, e);
+                    }
+                }
+            }
+
+            if (hasNew) setProjectConfigs(newConfigs);
+        };
+
+        if (orders.length > 0) fetchNeededProjects();
+    }, [orders, db]);
 
     const handlePrint = useReactToPrint({
         content: () => printRef.current,
@@ -72,6 +109,51 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
         });
         return count;
     }, [groupedSummary]);
+
+    const materialAggregates = useMemo(() => {
+        const aggregates: Record<string, { totalQuantity: number; unit: string; totalCost: number }> = {};
+
+        orders.forEach(order => {
+            const pid = order.projectId;
+            const project = pid ? projectConfigs[pid] : null;
+
+            order.items.forEach(item => {
+                // Apply garment filter to materials too
+                if (selectedGarment !== "all" && item.productName !== selectedGarment) return;
+
+                if (project) {
+                    const lineItem = project.lineItems.find(li => li.name === item.productName);
+                    if (lineItem) {
+                        const size = item.size || 'M';
+                        const factor = FITTING_SIZE_FACTORS[size] || 1.0;
+
+                        lineItem.items.forEach(materialItem => {
+                            const name = materialItem.material.name;
+                            const unit = materialItem.material.unit;
+                            const price = materialItem.material.price;
+
+                            if (!aggregates[name]) {
+                                aggregates[name] = { totalQuantity: 0, unit, totalCost: 0 };
+                            }
+
+                            const qtyPerGarment = materialItem.type === 'Fabric' ? materialItem.quantity * factor : materialItem.quantity;
+                            const totalQty = qtyPerGarment * item.quantity;
+
+                            aggregates[name].totalQuantity += totalQty;
+                            aggregates[name].totalCost += totalQty * price;
+                        });
+                    }
+                }
+            });
+        });
+
+        return aggregates;
+    }, [orders, projectConfigs, selectedGarment]);
+
+    const getUnitLabel = (unit: string) => {
+        if (unit === 'm²') return 'm';
+        return unit;
+    };
 
     return (
         <Card className="border shadow-none">
@@ -212,6 +294,38 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                                     </div>
                                 );
                             })}
+                        </div>
+                    )}
+
+                    {Object.keys(materialAggregates).length > 0 && (
+                        <div className="mt-12 pt-8 border-t-2 border-slate-200">
+                            <h3 className="text-xl font-black uppercase tracking-tight mb-4 flex items-center gap-2">
+                                <ShoppingBag className="h-5 w-5" />
+                                Necesidad de Materiales (Compra Global)
+                            </h3>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Basado en los proyectos vinculados y las tallas seleccionadas.
+                            </p>
+                            <div className="border rounded-md overflow-hidden bg-white">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="bg-slate-50">
+                                            <TableHead className="font-bold">Material</TableHead>
+                                            <TableHead className="text-center font-bold">Cantidad Total</TableHead>
+                                            <TableHead className="text-right font-bold">Costo Estimado</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {Object.entries(materialAggregates).sort(([a], [b]) => a.localeCompare(b)).map(([name, data]) => (
+                                            <TableRow key={name}>
+                                                <TableCell className="font-medium">{name}</TableCell>
+                                                <TableCell className="text-center">{data.totalQuantity.toFixed(2)} {getUnitLabel(data.unit)}</TableCell>
+                                                <TableCell className="text-right font-bold">{data.totalCost.toLocaleString()} Bs</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
                         </div>
                     )}
                 </div>
