@@ -184,38 +184,6 @@ export function OnlineOrdersView() {
                 </Card>
             </div>
 
-            {/* Debug Info */}
-            <div className="p-2 border rounded bg-slate-50 text-[10px] text-muted-foreground font-mono flex flex-wrap gap-4 items-center">
-                <span>UID: {user?.uid || 'N/A'}</span>
-                <span>Total docs found: {orders.length}</span>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-6 text-[10px] px-2"
-                    onClick={async () => {
-                        if (!user) return;
-                        try {
-                            await addDoc(collection(db, 'public_orders'), {
-                                userId: user.uid,
-                                customer: { name: 'PRUEBA SISTEMA', email: 'test@example.com', phone: '00000000' },
-                                college: 'COLEGIO DE PRUEBA',
-                                items: [{ productName: 'Producto de Prueba', quantity: 1, price: 100, type: 'stock' }],
-                                status: 'pending_payment',
-                                totalAmount: 100,
-                                createdAt: serverTimestamp(),
-                                updatedAt: serverTimestamp()
-                            });
-                            toast({ title: 'Pedido de prueba creado con éxito' });
-                        } catch (e: any) {
-                            console.error(e);
-                            toast({ variant: 'destructive', title: 'Error al crear prueba', description: e.message });
-                        }
-                    }}
-                >
-                    Generar Pedido de Prueba
-                </Button>
-                <p className="text-[10px] italic">Usa este botón para verificar si los pedidos nuevos aparecen aquí.</p>
-            </div>
 
             {/* Orders Table */}
             <Card>
