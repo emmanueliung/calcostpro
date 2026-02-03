@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
-import { Order, OrderStatus } from '@/lib/types';
+import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { Order, OrderStatus, ProjectConfiguration } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader } from '@/components/ui/loader';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Trash2, DollarSign, ShoppingBag, ClipboardList, Search } from 'lucide-react';
+import { Trash2, DollarSign, ShoppingBag, ClipboardList, Search, ArrowRight, ArrowLeft, Image as ImageIcon, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -34,6 +34,34 @@ export default function ProductionPage() {
     // Payment Modal State
     const [paymentOrder, setPaymentOrder] = useState<Order | null>(null);
     const [contentOpen, setContentOpen] = useState(false);
+    const [projectConfigs, setProjectConfigs] = useState<Record<string, ProjectConfiguration>>({});
+
+    useEffect(() => {
+        const fetchProjects = async () => {
+            const projectIds = new Set<string>();
+            orders.forEach(o => {
+                if (o.projectId) projectIds.add(o.projectId);
+            });
+
+            const newConfigs: Record<string, ProjectConfiguration> = { ...projectConfigs };
+            let hasNew = false;
+            for (const pid of Array.from(projectIds)) {
+                if (!newConfigs[pid]) {
+                    try {
+                        const snap = await getDoc(doc(db, "projects", pid));
+                        if (snap.exists()) {
+                            newConfigs[pid] = { id: snap.id, ...snap.data() } as ProjectConfiguration;
+                            hasNew = true;
+                        }
+                    } catch (e) {
+                        console.error("Error fetching project", pid, e);
+                    }
+                }
+            }
+            if (hasNew) setProjectConfigs(newConfigs);
+        };
+        if (orders.length > 0) fetchProjects();
+    }, [orders, db]);
 
     useEffect(() => {
         if (isUserLoading) return;
@@ -125,6 +153,8 @@ export default function ProductionPage() {
         return matchesCollege && matchesSearch;
     });
 
+    const activeProject = Object.values(projectConfigs).find(p => p.projectDetails.projectName === selectedCollege);
+
     if (isLoading) return <Loader text="Cargando pedidos..." />;
 
     return (
@@ -159,6 +189,81 @@ export default function ProductionPage() {
                     </div>
                 </div>
             </div>
+
+            {selectedCollege !== 'all' && (
+                <Card className="bg-slate-900 text-white overflow-hidden border-none shadow-lg">
+                    <CardContent className="p-0">
+                        <div className="flex flex-col md:flex-row">
+                            <div className="p-6 md:w-2/3 space-y-4">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 text-slate-400 hover:text-white -ml-2 gap-1 px-2"
+                                            onClick={() => setSelectedCollege('all')}
+                                        >
+                                            <ArrowLeft className="h-4 w-4" />
+                                            <span>Volver</span>
+                                        </Button>
+                                        <Badge className="bg-primary/20 text-primary border-primary/30 hover:bg-primary/30">
+                                            {activeProject ? 'Proyecto Activo' : 'Colegio / Grupo'}
+                                        </Badge>
+                                        {activeProject?.status && (
+                                            <Badge variant="outline" className="text-slate-400 border-slate-700">
+                                                {activeProject.status}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <h2 className="text-3xl font-black tracking-tight">{selectedCollege}</h2>
+                                    {activeProject && (
+                                        <p className="text-slate-400 font-medium">Cliente: <span className="text-white">{activeProject.projectDetails.clientName}</span></p>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap gap-6 pt-2">
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Producción Directa</p>
+                                        <p className="text-xl font-bold">{filteredOrders.filter(o => o.type !== 'project_fitting').length} <span className="text-sm font-normal text-slate-500">estudiantes</span></p>
+                                    </div>
+                                    <div className="space-y-1 border-l border-slate-800 pl-6">
+                                        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Medidas registradas</p>
+                                        <p className="text-xl font-bold">{filteredOrders.filter(o => o.type === 'project_fitting').length} <span className="text-sm font-normal text-slate-500">participantes</span></p>
+                                    </div>
+                                    <div className="space-y-1 border-l border-slate-800 pl-6">
+                                        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Prendas Totales</p>
+                                        <p className="text-xl font-bold text-primary">
+                                            {filteredOrders.reduce((sum, o) => sum + o.items.reduce((s, i) => s + i.quantity, 0), 0)}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {activeProject && (
+                                <div className="bg-slate-800/50 p-6 md:w-1/3 border-l border-slate-700 space-y-4">
+                                    <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500">Acciones del Proyecto</h4>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <Button
+                                            variant="outline"
+                                            className="justify-start bg-slate-900 border-slate-700 hover:bg-slate-800 text-slate-300 h-9"
+                                            size="sm"
+                                            onClick={() => window.open(`/product-sheet/${activeProject.id}`, '_blank')}
+                                        >
+                                            <ImageIcon className="w-4 h-4 mr-2" /> Ficha de Producto
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="justify-start bg-slate-900 border-slate-700 hover:bg-slate-800 text-slate-300 h-9"
+                                            size="sm"
+                                            onClick={() => window.open(`/materials/${activeProject.id}`, '_blank')}
+                                        >
+                                            <FileText className="w-4 h-4 mr-2" /> Resumen de Compra
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
                 <Card className="bg-white border shadow-sm">
@@ -195,6 +300,57 @@ export default function ProductionPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {selectedCollege === "all" && uniqueColleges.length > 0 && (
+                <div className="space-y-4 mb-8">
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                        <ClipboardList className="h-5 w-5 text-primary" />
+                        Seleccione un Proyecto o Colegio para gestionar
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {uniqueColleges.map(c => {
+                            const isProject = Object.values(projectConfigs).some(p => p.projectDetails.projectName === c);
+                            const projectOrders = orders.filter(o => o.college === c);
+                            const totalAmount = projectOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+                            const pendingBalance = projectOrders.reduce((sum, o) => sum + (o.balance || 0), 0);
+
+                            return (
+                                <Card
+                                    key={c}
+                                    className="hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group bg-white border-slate-200"
+                                    onClick={() => setSelectedCollege(c)}
+                                >
+                                    <CardHeader className="pb-2">
+                                        <div className="flex justify-between items-start">
+                                            <Badge variant={isProject ? "default" : "outline"} className={isProject ? "bg-slate-900" : ""}>
+                                                {isProject ? 'Proyecto' : 'Colegio'}
+                                            </Badge>
+                                            <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors" />
+                                        </div>
+                                        <CardTitle className="text-base pt-2 group-hover:text-primary transition-colors">{c}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2">
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-muted-foreground">Pedidos:</span>
+                                            <span className="font-bold">{projectOrders.length}</span>
+                                        </div>
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-muted-foreground">Venta:</span>
+                                            <span className="font-bold">{totalAmount.toLocaleString()} Bs</span>
+                                        </div>
+                                        {pendingBalance > 0 && (
+                                            <div className="flex justify-between text-xs text-red-600">
+                                                <span>Pendiente:</span>
+                                                <span className="font-bold">{pendingBalance.toLocaleString()} Bs</span>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             <Tabs defaultValue="local" className="w-full">
                 <TabsList className="bg-white border p-1 h-auto mb-6">
