@@ -12,8 +12,8 @@ import { Button } from './ui/button';
 import { ADMIN_UID, ENTERPRISE_USERS } from '@/lib/roles';
 
 interface ProfileData {
-    name?: string;
-    logoUrl?: string;
+  name?: string;
+  logoUrl?: string;
 }
 
 export function UserProfile() {
@@ -44,7 +44,7 @@ export function UserProfile() {
       setProfileLoading(false);
     }
   }, [userDocRef, isUserLoading]);
-  
+
   const isAdmin = useMemo(() => {
     if (isUserLoading || !user) return false;
     return user.uid === ADMIN_UID;
@@ -67,47 +67,47 @@ export function UserProfile() {
 
   return (
     <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-             <Button variant="ghost" size="icon" className="h-auto w-auto p-1">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Abrir menú</span>
-             </Button>
-        </DropdownMenuTrigger>
-         <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none truncate">{displayName}</p>
-                    <p className="text-xs leading-none text-muted-foreground truncate">{user.email}</p>
-                </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild><Link href="/dashboard">Escritorio</Link></DropdownMenuItem>
-            <DropdownMenuItem asChild><Link href="/materials">Materiales</Link></DropdownMenuItem>
-            <DropdownMenuItem asChild><Link href="/fittings">Toma de Medidas</Link></DropdownMenuItem>
-            {isEnterprise && (
-              <DropdownMenuItem asChild><Link href="/summaries">Resúmenes de Consumo</Link></DropdownMenuItem>
-            )}
-            
-            {isAdmin && (
-              <>
-                <DropdownMenuItem asChild>
-                  <Link href="/admin">Admin</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/admin/bonus-codes">Códigos Bonus</Link>
-                </DropdownMenuItem>
-              </>
-            )}
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-auto w-auto p-1">
+          <Menu className="h-6 w-6" />
+          <span className="sr-only">Abrir menú</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56" align="end" forceMount>
+        <DropdownMenuLabel className="font-normal">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none truncate">{displayName}</p>
+            <p className="text-xs leading-none text-muted-foreground truncate">{user.email}</p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild><Link href="/dashboard">Escritorio</Link></DropdownMenuItem>
+        <DropdownMenuItem asChild><Link href="/materials">Materiales</Link></DropdownMenuItem>
 
-            <DropdownMenuItem asChild><Link href="/settings">Ajustes</Link></DropdownMenuItem>
-            <DropdownMenuItem asChild><Link href="/subscription">Suscripción</Link></DropdownMenuItem>
-            <DropdownMenuItem asChild><Link href="/support">Soporte</Link></DropdownMenuItem>
+        {isEnterprise && (
+          <DropdownMenuItem asChild><Link href="/summaries">Resúmenes de Consumo</Link></DropdownMenuItem>
+        )}
 
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                 <AuthButton mode="logout" />
+        {isAdmin && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link href="/admin">Admin</Link>
             </DropdownMenuItem>
-         </DropdownMenuContent>
+            <DropdownMenuItem asChild>
+              <Link href="/admin/bonus-codes">Códigos Bonus</Link>
+            </DropdownMenuItem>
+          </>
+        )}
+
+        <DropdownMenuItem asChild><Link href="/settings">Ajustes</Link></DropdownMenuItem>
+        <DropdownMenuItem asChild><Link href="/subscription">Suscripción</Link></DropdownMenuItem>
+        <DropdownMenuItem asChild><Link href="/support">Soporte</Link></DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+          <AuthButton mode="logout" />
+        </DropdownMenuItem>
+      </DropdownMenuContent>
     </DropdownMenu>
   );
 }

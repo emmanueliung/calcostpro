@@ -48,81 +48,81 @@ export function ProjectActions({ project, onProjectDeleted, isEnterpriseUser, is
 
   const handleDuplicate = async () => {
     if (!user) return;
-    
+
     try {
-        const originalProjectSnap = await getDoc(doc(db, "projects", project.id));
-        if (!originalProjectSnap.exists()) {
-            throw new Error("El proyecto original no existe.");
-        }
+      const originalProjectSnap = await getDoc(doc(db, "projects", project.id));
+      if (!originalProjectSnap.exists()) {
+        throw new Error("El proyecto original no existe.");
+      }
 
-        const originalData = originalProjectSnap.data();
+      const originalData = originalProjectSnap.data();
 
-        // Build a clean data object to avoid Firestore data validation errors.
-        const cleanData = {
-          userId: user.uid,
-          projectDetails: {
-            clientName: originalData.projectDetails?.clientName || '',
-            projectName: `[Copia] ${originalData.projectDetails?.projectName || 'Sin Nombre'}`,
+      // Build a clean data object to avoid Firestore data validation errors.
+      const cleanData = {
+        userId: user.uid,
+        projectDetails: {
+          clientName: originalData.projectDetails?.clientName || '',
+          projectName: `[Copia] ${originalData.projectDetails?.projectName || 'Sin Nombre'}`,
+        },
+        quoteMode: originalData.quoteMode || 'individual',
+        lineItems: (originalData.lineItems || []).map((li: any) => ({
+          id: uuidv4(),
+          name: li.name || 'Nueva Prenda',
+          quantity: li.quantity || 1,
+          profitMargin: li.profitMargin || 50,
+          description: li.description || '',
+          productImageUrls: li.productImageUrls || [],
+          laborCosts: {
+            labor: li.laborCosts?.labor || 0,
+            cutting: li.laborCosts?.cutting || 0,
+            other: li.laborCosts?.other || 0,
           },
-          quoteMode: originalData.quoteMode || 'individual',
-          lineItems: (originalData.lineItems || []).map((li: any) => ({
-            id: uuidv4(),
-            name: li.name || 'Nueva Prenda',
-            quantity: li.quantity || 1,
-            profitMargin: li.profitMargin || 50,
-            description: li.description || '',
-            productImageUrls: li.productImageUrls || [],
-            laborCosts: {
-              labor: li.laborCosts?.labor || 0,
-              cutting: li.laborCosts?.cutting || 0,
-              other: li.laborCosts?.other || 0,
-            },
-            sizePrices: (li.sizePrices || []).map((sp: any) => ({
-              size: sp.size,
-              price: sp.price,
-              isSelected: sp.isSelected,
-            })),
-            items: (li.items || []).map((item: any) => ({
-              id: uuidv4(),
-              type: item.type,
-              quantity: item.quantity,
-              total: item.total,
-              material: {
-                id: item.material.id,
-                name: item.material.name,
-                price: item.material.price,
-                unit: item.material.unit,
-                ...(item.material.ancho && { ancho: item.material.ancho }),
-                ...(item.material.grammage && { grammage: item.material.grammage }),
-              }
-            })),
+          sizePrices: (li.sizePrices || []).map((sp: any) => ({
+            size: sp.size,
+            price: sp.price,
+            isSelected: sp.isSelected,
           })),
-          status: 'En espera',
-          quoteSpecificConditions: originalData.quoteSpecificConditions || {
-            validity: '15 días',
-            deliveryTime: '30 días hábiles',
-            deliveryPlace: 'Nuestros talleres',
-            quoteDate: '',
-          },
-          createdAt: serverTimestamp(),
-        };
+          items: (li.items || []).map((item: any) => ({
+            id: uuidv4(),
+            type: item.type,
+            quantity: item.quantity,
+            total: item.total,
+            material: {
+              id: item.material.id,
+              name: item.material.name,
+              price: item.material.price,
+              unit: item.material.unit,
+              ...(item.material.ancho && { ancho: item.material.ancho }),
+              ...(item.material.grammage && { grammage: item.material.grammage }),
+            }
+          })),
+        })),
+        status: 'En espera',
+        quoteSpecificConditions: originalData.quoteSpecificConditions || {
+          validity: '15 días',
+          deliveryTime: '30 días hábiles',
+          deliveryPlace: 'Nuestros talleres',
+          quoteDate: '',
+        },
+        createdAt: serverTimestamp(),
+      };
 
-        const docRef = await addDoc(collection(db, "projects"), cleanData);
-        
-        toast({
-            title: "Proyecto Duplicado",
-            description: "El proyecto ha sido duplicado exitosamente. Redirigiendo...",
-        });
+      const docRef = await addDoc(collection(db, "projects"), cleanData);
 
-        router.push(`/quote?projectId=${docRef.id}`);
+      toast({
+        title: "Proyecto Duplicado",
+        description: "El proyecto ha sido duplicado exitosamente. Redirigiendo...",
+      });
+
+      router.push(`/quote?projectId=${docRef.id}`);
 
     } catch (error: any) {
-        console.error("Error duplicating project: ", error);
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: `No se pudo duplicar el proyecto. ${error.message}`,
-        });
+      console.error("Error duplicating project: ", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: `No se pudo duplicar el proyecto. ${error.message}`,
+      });
     }
   };
 
@@ -161,12 +161,7 @@ export function ProjectActions({ project, onProjectDeleted, isEnterpriseUser, is
               Ficha de Producto
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild disabled={!isPremiumUser && !isEnterpriseUser}>
-            <Link href={`/fittings/${project.id}/details`}>
-              <Users className="mr-2 h-4 w-4" />
-              Gestionar Medidas
-            </Link>
-          </DropdownMenuItem>
+
           <DropdownMenuItem onClick={handleDuplicate}>
             <Copy className="mr-2 h-4 w-4" />
             Duplicar
