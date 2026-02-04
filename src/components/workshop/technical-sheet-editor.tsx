@@ -102,16 +102,19 @@ export function TechnicalSheetEditor({ open, onOpenChange, sheet }: TechnicalShe
 
         setIsSaving(true);
         try {
-            const data = {
+            const data: any = {
                 userId: user.uid,
                 name: name.trim(),
                 category: category.trim(),
-                imageUrl: imageUrl.trim() || null,
                 components,
                 sizeConsumptions,
-                totalLaborMinutes,
+                totalLaborMinutes: Number(totalLaborMinutes) || 0,
                 updatedAt: serverTimestamp(),
             };
+
+            if (imageUrl.trim()) {
+                data.imageUrl = imageUrl.trim();
+            }
 
             if (sheet) {
                 await updateDoc(doc(db, 'technical_sheets', sheet.id), data);
@@ -138,7 +141,7 @@ export function TechnicalSheetEditor({ open, onOpenChange, sheet }: TechnicalShe
                 <DialogHeader className="p-6 pb-0">
                     <DialogTitle className="text-2xl">{sheet ? 'Editar Modelo' : 'Nuevo Modelo en Biblioteca'}</DialogTitle>
                     <DialogDescription>
-                        Configura la estructura y consumos base de este vêtement.
+                        Configura la estructura y consumos base de esta prenda.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -170,6 +173,17 @@ export function TechnicalSheetEditor({ open, onOpenChange, sheet }: TechnicalShe
                                         <SelectItem value="Accesorio">Accesorio</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="labor">Tiempo de Mano de Obra (min)</Label>
+                                <Input
+                                    id="labor"
+                                    type="number"
+                                    value={totalLaborMinutes}
+                                    onChange={(e) => setTotalLaborMinutes(Number(e.target.value))}
+                                    placeholder="Ej: 45"
+                                    className="bg-white"
+                                />
                             </div>
                         </div>
                         <div className="space-y-2">
