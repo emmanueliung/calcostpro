@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         // Sender Configuration
         const senderName = emailSettings?.senderName || workshopName;
         const replyTo = emailSettings?.replyTo || workshopEmail;
-        const fromEmail = process.env.RESEND_FROM_EMAIL || 'CalcostPro <notifications@resend.dev>';
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'CalcostPro <notificaciones@calcostpro.com>';
 
         // Send customer confirmation
         if (emailSettings === undefined || emailSettings.sendConfirmationToCustomer !== false) {

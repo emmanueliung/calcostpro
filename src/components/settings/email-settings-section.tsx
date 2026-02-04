@@ -18,6 +18,7 @@ export function EmailSettingsSection() {
     const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [testing, setTesting] = useState(false);
     const [settings, setSettings] = useState<EmailSettings>({
         senderName: '',
         replyTo: '',
@@ -75,6 +76,39 @@ export function EmailSettingsSection() {
             });
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleTestEmail = async () => {
+        if (!user || !user.email) return;
+        setTesting(true);
+        try {
+            const response = await fetch('/api/send-test-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: user.email,
+                    name: settings.senderName || user.displayName || 'Usuario'
+                }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                toast({
+                    title: "Email enviado",
+                    description: `Se ha enviado un correo de prueba a ${user.email}`,
+                });
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error: any) {
+            console.error("Error testing email:", error);
+            toast({
+                variant: "destructive",
+                title: "Error de envío",
+                description: error.message || "No se pudo enviar el email de prueba. Verifica la configuración.",
+            });
+        } finally {
+            setTesting(false);
         }
     };
 
@@ -136,6 +170,21 @@ export function EmailSettingsSection() {
                             />
                             <p className="text-xs text-muted-foreground">
                                 Si el cliente responde al correo, llegará a esta dirección.
+                            </p>
+                        </div>
+
+                        <div className="pt-4">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={handleTestEmail}
+                                disabled={testing}
+                            >
+                                {testing ? "Enviando..." : "Enviar Email de Prueba"}
+                            </Button>
+                            <p className="text-[10px] text-muted-foreground mt-2 italic text-center">
+                                Usa esto para verificar que las notificaciones funcionen correctamente.
                             </p>
                         </div>
                     </div>
