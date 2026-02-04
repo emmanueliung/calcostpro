@@ -259,6 +259,7 @@ export interface PublicOrder {
   createdAt: any;
   updatedAt: any;
   adminNotes?: string;
+  notes?: string;
 }
 
 // --- GARMENT LIBRARY TYPES ---
