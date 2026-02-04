@@ -22,8 +22,12 @@ if (getApps().length === 0) {
                     privateKey,
                 }),
             });
+            console.log('Firebase Admin initialized with service account');
         } else {
-            console.warn('Firebase Admin credentials missing, skipping initialization (normal during build if not provided)');
+            // On Firebase App Hosting or Cloud Functions, initializeApp() with no args
+            // will automatically use the default credentials.
+            initializeApp();
+            console.log('Firebase Admin initialized with default credentials');
         }
     } catch (e) {
         console.error('Error initializing Firebase Admin:', e);
@@ -31,7 +35,15 @@ if (getApps().length === 0) {
 }
 
 export async function POST(request: NextRequest) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+        console.error('RESEND_API_KEY is missing');
+        return NextResponse.json(
+            { error: 'Email service configuration missing' },
+            { status: 500 }
+        );
+    }
+    const resend = new Resend(apiKey);
     try {
         const body = await request.json();
         const {

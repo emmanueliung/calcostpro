@@ -216,6 +216,7 @@ export function OnlineOrdersView() {
                         <div className="text-center py-12 text-muted-foreground">
                             <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-50" />
                             <p>No hay pedidos en esta categoría</p>
+                            <p className="text-xs mt-2">Asegúrate de que tus clientes estén usando tu enlace público de la sección de Configuración.</p>
                         </div>
                     ) : (
                         <OnlineOrdersTable
