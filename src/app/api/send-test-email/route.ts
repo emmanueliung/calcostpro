@@ -2,13 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
 export async function POST(request: NextRequest) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const apiKey = process.env.RESEND_API_KEY;
+
+    if (!apiKey) {
+        return NextResponse.json({
+            error: 'RESEND_API_KEY no encontrada en el servidor. Por favor, asegúrate de configurar las variables de entorno en Firebase App Hosting.',
+            details: 'La variable RESEND_API_KEY no está definida.'
+        }, { status: 500 });
+    }
+
+    const resend = new Resend(apiKey);
     try {
         const body = await request.json();
         const { email, name } = body;
 
         if (!email) {
-            return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+            return NextResponse.json({ error: 'El email es obligatorio' }, { status: 400 });
         }
 
         const fromEmail = process.env.RESEND_FROM_EMAIL || 'CalcostPro <notificaciones@calcostpro.com>';
