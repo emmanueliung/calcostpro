@@ -53,6 +53,10 @@ export function ModuleMenu() {
                         <ClipboardList className="mr-2 h-4 w-4" />
                         <span>Gestión de Pedidos</span>
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/workshop/library')}>
+                        <ShoppingBag className="mr-2 h-4 w-4" />
+                        <span>Biblioteca de Modelos</span>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => router.push('/workshop/settings')}>
                         <Settings className="mr-2 h-4 w-4" />

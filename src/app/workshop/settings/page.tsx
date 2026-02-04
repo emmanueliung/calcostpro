@@ -10,13 +10,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Trash2, Plus, Edit, Save } from 'lucide-react';
+import { Trash2, Plus, Edit, Save, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PublicLinkSection } from '@/components/settings/public-link-section';
 import { PaymentQrSection } from '@/components/settings/payment-qr-section';
 import { EmailSettingsSection } from '@/components/settings/email-settings-section';
 import { Loader } from '@/components/ui/loader';
 import { useRouter } from 'next/navigation';
+import { TechnicalSheet } from '@/lib/types';
+import { v4 as uuidv4 } from 'uuid';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 export default function WorkshopSettingsPage() {
     const { user, isUserLoading } = useUser();
@@ -116,12 +125,30 @@ export default function WorkshopSettingsPage() {
         }
     };
 
+    const [selectedSheetId, setSelectedSheetId] = useState<string>('');
+    const [technicalSheets, setTechnicalSheets] = useState<TechnicalSheet[]>([]);
+
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, "technical_sheets"), where("userId", "==", user.uid));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TechnicalSheet));
+            setTechnicalSheets(data);
+        });
+        return () => unsubscribe();
+    }, [user, db]);
+
     const handleAddItem = async () => {
         if (!editingCollege || !newItemName || !newItemPrice) return;
         const price = parseFloat(newItemPrice);
         if (isNaN(price)) return;
 
-        const newItem: CollegeItem = { name: newItemName, price };
+        const newItem: CollegeItem = {
+            id: uuidv4(),
+            name: newItemName,
+            price,
+            technicalSheetId: selectedSheetId || undefined
+        };
         const updatedList = [...(editingCollege.priceList || []), newItem];
 
         try {
@@ -129,6 +156,7 @@ export default function WorkshopSettingsPage() {
             setEditingCollege({ ...editingCollege, priceList: updatedList });
             setNewItemName('');
             setNewItemPrice('');
+            setSelectedSheetId('');
         } catch (e) {
             console.error(e);
         }
@@ -266,17 +294,34 @@ export default function WorkshopSettingsPage() {
 
                         {/* Price List Section */}
                         <div className="flex-1 overflow-hidden flex flex-col mt-2">
-                            <Label className="mb-2">Agregar Prenda o Artículo</Label>
-                            <div className="flex gap-2 items-end mb-4 bg-muted/50 p-3 rounded-lg">
-                                <div className="flex-1 space-y-1">
-                                    <Label className="text-xs">Nombre</Label>
-                                    <Input placeholder="Ej: Pantalon" value={newItemName} onChange={e => setNewItemName(e.target.value)} />
+                            <div className="flex flex-col gap-2 mb-4 bg-muted/50 p-3 rounded-lg">
+                                <div className="flex gap-2 items-end">
+                                    <div className="flex-1 space-y-1">
+                                        <Label className="text-xs">Nombre de la Prenda</Label>
+                                        <Input placeholder="Ej: Pantalon" value={newItemName} onChange={e => setNewItemName(e.target.value)} />
+                                    </div>
+                                    <div className="w-24 space-y-1">
+                                        <Label className="text-xs">Precio</Label>
+                                        <Input type="number" placeholder="0" value={newItemPrice} onChange={e => setNewItemPrice(e.target.value)} />
+                                    </div>
+                                    <Button onClick={handleAddItem}><Plus className="h-4 w-4" /></Button>
                                 </div>
-                                <div className="w-24 space-y-1">
-                                    <Label className="text-xs">Precio</Label>
-                                    <Input type="number" placeholder="0" value={newItemPrice} onChange={e => setNewItemPrice(e.target.value)} />
+                                <div className="space-y-1">
+                                    <Label className="text-xs">Vincular a Ficha Técnica (Opcional)</Label>
+                                    <Select value={selectedSheetId} onValueChange={setSelectedSheetId}>
+                                        <SelectTrigger className="h-9 bg-white">
+                                            <SelectValue placeholder="Seleccionar un modelo de la biblioteca..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">Ninguno</SelectItem>
+                                            {technicalSheets.map(sheet => (
+                                                <SelectItem key={sheet.id} value={sheet.id}>
+                                                    {sheet.name} ({sheet.category})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                                <Button onClick={handleAddItem}><Plus className="h-4 w-4" /></Button>
                             </div>
 
                             <div className="border rounded-md flex-1 overflow-y-auto min-h-[200px]">
@@ -291,7 +336,17 @@ export default function WorkshopSettingsPage() {
                                     <TableBody>
                                         {editingCollege?.priceList?.map((item, idx) => (
                                             <TableRow key={idx}>
-                                                <TableCell>{item.name}</TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-col">
+                                                        <span>{item.name}</span>
+                                                        {item.technicalSheetId && (
+                                                            <div className="flex items-center gap-1 text-[10px] text-primary font-medium">
+                                                                <ShoppingBag className="h-3 w-3" />
+                                                                {technicalSheets.find(s => s.id === item.technicalSheetId)?.name || 'Modelo vinculado'}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
                                                 <TableCell className="text-right">{item.price} Bs</TableCell>
                                                 <TableCell>
                                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveItem(idx)}>

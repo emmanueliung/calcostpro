@@ -6,7 +6,7 @@ export interface Material {
   name: string;
   price: number;
   unit: 'm' | 'piece' | 'fixed' | 'kg';
-  grammage?: number; // g/m²
+  grammage?: number; // g/mÂ²
   ancho?: number; // m (width)
 }
 
@@ -161,7 +161,7 @@ export interface Student {
   userId: string; // Owner
   college: string;
   collegeId?: string; // Reference to the price list (College)
-  name: string; // "Dupont Léo"
+  name: string; // "Dupont LÃ©o"
   gender?: 'Hombre' | 'Mujer';
   classroom?: string; // Clase/Curso
   measurements?: StudentMeasurements;
@@ -182,11 +182,14 @@ export interface OrderItem {
   price: number;
   size?: string;
   type: OrderType;
+  technicalSheetId?: string; // Link to the garment library for consumption calculation
 }
 
 export interface CollegeItem {
+  id?: string;
   name: string;
   price: number;
+  technicalSheetId?: string; // Link to the garment library
 }
 
 export interface College {
@@ -232,11 +235,11 @@ export interface Transaction {
 
 export type PublicOrderStatus =
   | 'pending_payment'      // Client a soumis, en attente de validation du paiement
-  | 'payment_verified'     // Paiement validé par l'admin
+  | 'payment_verified'     // Paiement validÃ© par l'admin
   | 'in_production'        // En production
-  | 'ready'                // Prêt pour retrait
-  | 'delivered'            // Livré
-  | 'cancelled';           // Annulé
+  | 'ready'                // PrÃªt pour retrait
+  | 'delivered'            // LivrÃ©
+  | 'cancelled';           // AnnulÃ©
 
 export interface CustomerInfo {
   name: string;
@@ -255,5 +258,34 @@ export interface PublicOrder {
   paymentProofUrl?: string;    // Screenshot of QR payment
   createdAt: any;
   updatedAt: any;
-  notes?: string;              // Admin notes
+  adminNotes?: string;
+}
+
+// --- GARMENT LIBRARY TYPES ---
+
+export type ComponentType = 'tissu' | 'accessoire' | 'main_d_oeuvre';
+
+export interface SizeConsumption {
+  size: string;
+  consumption: number; // specific consumption for this size
+}
+
+export interface TechnicalSheetComponent {
+  id: string;
+  name: string;
+  type: ComponentType;
+  consumptionBase: number; // default or base consumption
+  unit: string;
+}
+
+export interface TechnicalSheet {
+  id: string;
+  userId: string;
+  name: string;
+  category: string;
+  components: TechnicalSheetComponent[];
+  sizeConsumptions: SizeConsumption[]; // consumption per size (e.g. S: 0.75, XL: 1.40)
+  totalLaborMinutes?: number;
+  createdAt: any;
+  updatedAt: any;
 }

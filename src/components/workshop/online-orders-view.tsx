@@ -8,9 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OnlineOrdersTable } from '@/components/dashboard/online-orders-table';
-import { Loader2, ShoppingBag, AlertCircle } from 'lucide-react';
+import { Loader2, ShoppingBag, AlertCircle, Calculator } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { MaterialNeeds } from './material-needs';
 
 export function OnlineOrdersView() {
     const { user } = useUser();
@@ -19,7 +20,7 @@ export function OnlineOrdersView() {
 
     const [orders, setOrders] = useState<PublicOrder[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<PublicOrderStatus | 'all'>('pending_payment');
+    const [activeTab, setActiveTab] = useState<PublicOrderStatus | 'all' | 'needs'>('pending_payment');
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -188,8 +189,8 @@ export function OnlineOrdersView() {
             {/* Orders Table */}
             <Card>
                 <CardHeader>
-                    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PublicOrderStatus | 'all')}>
-                        <TabsList className="grid w-full grid-cols-6 h-auto p-1 bg-muted/30">
+                    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+                        <TabsList className="grid w-full grid-cols-7 h-auto p-1 bg-muted/30">
                             <TabsTrigger value="all" className="text-xs py-2">
                                 Todos ({getOrderCount('all')})
                             </TabsTrigger>
@@ -208,11 +209,16 @@ export function OnlineOrdersView() {
                             <TabsTrigger value="delivered" className="text-xs py-2">
                                 Entregado ({getOrderCount('delivered')})
                             </TabsTrigger>
+                            <TabsTrigger value="needs" className="text-xs py-2 font-bold text-primary">
+                                <Calculator className="h-3 w-3 mr-1" /> Cálculo Insumos
+                            </TabsTrigger>
                         </TabsList>
                     </Tabs>
                 </CardHeader>
                 <CardContent>
-                    {filteredOrders.length === 0 ? (
+                    {activeTab === 'needs' ? (
+                        <MaterialNeeds orders={orders.filter(o => o.status !== 'cancelled')} />
+                    ) : filteredOrders.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
                             <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-50" />
                             <p>No hay pedidos en esta categoría</p>
