@@ -283,6 +283,7 @@ export interface TechnicalSheet {
   userId: string;
   name: string;
   category: string;
+  imageUrl?: string;
   components: TechnicalSheetComponent[];
   sizeConsumptions: SizeConsumption[]; // consumption per size (e.g. S: 0.75, XL: 1.40)
   totalLaborMinutes?: number;
