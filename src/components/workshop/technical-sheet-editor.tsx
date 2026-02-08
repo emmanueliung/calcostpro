@@ -125,24 +125,46 @@ export function TechnicalSheetEditor({ open, onOpenChange, sheet }: TechnicalShe
                 updatedAt: serverTimestamp(),
             };
 
-            if (imageUrl.trim()) {
-                data.imageUrl = imageUrl.trim();
-            }
+            // Helper to remove undefined values recursively
+            const removeUndefined = (obj: any): any => {
+                if (obj === null || typeof obj !== 'object') {
+                    return obj;
+                }
+                if (Array.isArray(obj)) {
+                    return obj.map(removeUndefined);
+                }
+                const newObj: any = {};
+                Object.keys(obj).forEach(key => {
+                    const value = removeUndefined(obj[key]);
+                    if (value !== undefined) {
+                        newObj[key] = value;
+                    }
+                });
+                return newObj;
+            };
+
+            const cleanData = removeUndefined(data);
 
             if (sheet) {
-                await updateDoc(doc(db, 'technical_sheets', sheet.id), data);
+                await updateDoc(doc(db, 'technical_sheets', sheet.id), cleanData);
                 toast({ title: 'Ficha actualizada', description: 'Cambios guardados correctamente.' });
             } else {
                 await addDoc(collection(db, 'technical_sheets'), {
-                    ...data,
+                    ...cleanData,
                     createdAt: serverTimestamp(),
                 });
                 toast({ title: 'Ficha creada', description: 'Nuevo modelo añadido a la biblioteca.' });
             }
             onOpenChange(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving technical sheet:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Hubo un problema al guardar.' });
+            const errorMessage = error?.message || 'Hubo un problema al guardar.';
+            // Add checking for permission
+            if (errorMessage.includes("permission")) {
+                toast({ variant: 'destructive', title: 'Error de Permisos', description: 'No tienes permiso para realizar esta acción. Verifica tu conexión.' });
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+            }
         } finally {
             setIsSaving(false);
         }
