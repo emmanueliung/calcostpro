@@ -102,13 +102,26 @@ export function TechnicalSheetEditor({ open, onOpenChange, sheet }: TechnicalShe
 
         setIsSaving(true);
         try {
+            // Sanitize numeric values to prevent NaN errors in Firestore
+            const safeComponents = components.map(c => ({
+                ...c,
+                consumptionBase: Number(c.consumptionBase) || 0
+            }));
+
+            const safeSizeConsumptions = sizeConsumptions.map(sc => ({
+                ...sc,
+                consumption: Number(sc.consumption) || 0
+            }));
+
+            const safeLaborMinutes = Number(totalLaborMinutes) || 0;
+
             const data: any = {
                 userId: user.uid,
                 name: name.trim(),
                 category: category.trim(),
-                components,
-                sizeConsumptions,
-                totalLaborMinutes: Number(totalLaborMinutes) || 0,
+                components: safeComponents,
+                sizeConsumptions: safeSizeConsumptions,
+                totalLaborMinutes: safeLaborMinutes,
                 updatedAt: serverTimestamp(),
             };
 
@@ -180,7 +193,10 @@ export function TechnicalSheetEditor({ open, onOpenChange, sheet }: TechnicalShe
                                     id="labor"
                                     type="number"
                                     value={totalLaborMinutes}
-                                    onChange={(e) => setTotalLaborMinutes(Number(e.target.value))}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value.replace(',', '.'));
+                                        setTotalLaborMinutes(isNaN(val) ? 0 : val);
+                                    }}
                                     placeholder="Ej: 45"
                                     className="bg-white"
                                 />
@@ -262,7 +278,10 @@ export function TechnicalSheetEditor({ open, onOpenChange, sheet }: TechnicalShe
                                                         <Input
                                                             type="number"
                                                             value={comp.consumptionBase}
-                                                            onChange={(e) => handleUpdateComponent(comp.id, { consumptionBase: Number(e.target.value) })}
+                                                            onChange={(e) => {
+                                                                const val = parseFloat(e.target.value.replace(',', '.'));
+                                                                handleUpdateComponent(comp.id, { consumptionBase: isNaN(val) ? 0 : val });
+                                                            }}
                                                             className="h-8 text-xs border-none focus-visible:ring-1"
                                                         />
                                                     </TableCell>
@@ -330,7 +349,10 @@ export function TechnicalSheetEditor({ open, onOpenChange, sheet }: TechnicalShe
                                                         type="number"
                                                         step="0.01"
                                                         value={sc.consumption}
-                                                        onChange={(e) => handleUpdateSize(index, { consumption: Number(e.target.value) })}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value.replace(',', '.'));
+                                                            handleUpdateSize(index, { consumption: isNaN(val) ? 0 : val });
+                                                        }}
                                                         className="h-8 text-xs border-none focus-visible:ring-1"
                                                     />
                                                 </TableCell>
