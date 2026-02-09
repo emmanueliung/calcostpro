@@ -256,17 +256,18 @@ export function TechnicalSheetEditor({ open, onOpenChange, sheet }: TechnicalShe
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-slate-50">
-                                            <TableHead className="w-[150px]">Nombre</TableHead>
-                                            <TableHead className="w-[120px]">Tipo</TableHead>
-                                            <TableHead className="w-[100px]">Consumo</TableHead>
-                                            <TableHead className="w-[80px]">Und</TableHead>
+                                            <TableHead className="w-[140px]">Nombre</TableHead>
+                                            <TableHead className="w-[110px]">Tipo</TableHead>
+                                            <TableHead className="w-[80px]">Consumo</TableHead>
+                                            <TableHead className="w-[60px]">Und</TableHead>
+                                            <TableHead className="w-[150px]">Notas</TableHead>
                                             <TableHead className="w-[50px]"></TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {components.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground text-sm">
+                                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground text-sm">
                                                     No hay componentes definidos todavía.
                                                 </TableCell>
                                             </TableRow>
@@ -311,6 +312,14 @@ export function TechnicalSheetEditor({ open, onOpenChange, sheet }: TechnicalShe
                                                         <Input
                                                             value={comp.unit}
                                                             onChange={(e) => handleUpdateComponent(comp.id, { unit: e.target.value })}
+                                                            className="h-8 text-xs border-none focus-visible:ring-1"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="p-2">
+                                                        <Input
+                                                            value={comp.notes || ''}
+                                                            onChange={(e) => handleUpdateComponent(comp.id, { notes: e.target.value })}
+                                                            placeholder="Notas..."
                                                             className="h-8 text-xs border-none focus-visible:ring-1"
                                                         />
                                                     </TableCell>

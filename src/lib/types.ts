@@ -277,6 +277,7 @@ export interface TechnicalSheetComponent {
   type: ComponentType;
   consumptionBase: number; // default or base consumption
   unit: string;
+  notes?: string; // Bloc de notes pour chaque pièce
 }
 
 export interface TechnicalSheet {
