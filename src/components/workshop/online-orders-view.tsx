@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { PublicOrder, PublicOrderStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -88,6 +88,24 @@ export function OnlineOrdersView() {
                 variant: 'destructive',
                 title: 'Error',
                 description: 'No se pudo actualizar el estado.'
+            });
+        }
+    };
+
+    const handleDeleteOrder = async (orderId: string) => {
+        try {
+            await deleteDoc(doc(db, 'public_orders', orderId));
+            setOrders(orders.filter(order => order.id !== orderId));
+            toast({
+                title: 'Pedido eliminado',
+                description: 'El pedido ha sido eliminado correctamente.'
+            });
+        } catch (error) {
+            console.error('Error deleting order:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'No se pudo eliminar el pedido.'
             });
         }
     };
@@ -228,6 +246,7 @@ export function OnlineOrdersView() {
                         <OnlineOrdersTable
                             orders={filteredOrders}
                             onStatusChange={handleStatusChange}
+                            onDeleteOrder={handleDeleteOrder}
                         />
                     )}
                 </CardContent>

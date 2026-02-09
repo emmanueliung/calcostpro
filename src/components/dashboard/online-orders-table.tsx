@@ -13,12 +13,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { OrderDetailDialog } from './order-detail-dialog';
-import { Eye, Phone, Mail } from 'lucide-react';
+import { Eye, Phone, Mail, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface OnlineOrdersTableProps {
     orders: PublicOrder[];
     onStatusChange: (orderId: string, newStatus: PublicOrderStatus) => void;
+    onDeleteOrder?: (orderId: string) => void;
 }
 
 const statusConfig: Record<PublicOrderStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -30,7 +31,7 @@ const statusConfig: Record<PublicOrderStatus, { label: string; variant: 'default
     cancelled: { label: 'Cancelado', variant: 'destructive' },
 };
 
-export function OnlineOrdersTable({ orders, onStatusChange }: OnlineOrdersTableProps) {
+export function OnlineOrdersTable({ orders, onStatusChange, onDeleteOrder }: OnlineOrdersTableProps) {
     const [selectedOrder, setSelectedOrder] = useState<PublicOrder | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -108,14 +109,30 @@ export function OnlineOrdersTable({ orders, onStatusChange }: OnlineOrdersTableP
                                     {formatDate(order.createdAt)}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleViewDetails(order)}
-                                    >
-                                        <Eye className="h-4 w-4 mr-1" />
-                                        Ver
-                                    </Button>
+                                    <div className="flex items-center justify-end gap-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleViewDetails(order)}
+                                        >
+                                            <Eye className="h-4 w-4 mr-1" />
+                                            Ver
+                                        </Button>
+                                        {onDeleteOrder && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                onClick={() => {
+                                                    if (window.confirm('¿Está seguro de eliminar este pedido? Esta acción no se puede deshacer.')) {
+                                                        onDeleteOrder(order.id);
+                                                    }
+                                                }}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))}
