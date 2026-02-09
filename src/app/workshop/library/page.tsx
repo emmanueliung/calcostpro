@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { defaultTemplates } from '@/lib/default-templates';
+import { v4 as uuidv4 } from 'uuid';
 
 import { TechnicalSheetEditor } from '@/components/workshop/technical-sheet-editor';
 
@@ -24,6 +26,7 @@ export default function LibraryPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [editingSheet, setEditingSheet] = useState<TechnicalSheet | null>(null);
+    const [importing, setImporting] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -59,6 +62,55 @@ export default function LibraryPage() {
         }
     };
 
+    const handleImportDefaults = async () => {
+        if (!user) return;
+        if (!confirm('¿Quieres importar los modelos por defecto? Esto creará nuevas fichas en tu biblioteca.')) return;
+
+        setImporting(true);
+        try {
+            let count = 0;
+            for (const template of defaultTemplates) {
+                // Check if already exists to avoid exact duplicates (optional, but good for UX)
+                // For simplicity, we just add them as new sheets
+
+                const newSheet = {
+                    userId: user.uid,
+                    name: template.name,
+                    category: template.category,
+                    imageUrl: '',
+                    components: template.components.map(c => ({
+                        id: uuidv4(),
+                        name: c.name,
+                        type: c.type,
+                        consumptionBase: c.consumptionBase,
+                        unit: c.unit,
+                        notes: ''
+                    })),
+                    sizeConsumptions: template.sizeConsumptions,
+                    totalLaborMinutes: template.totalLaborMinutes,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                };
+
+                await addDoc(collection(db, 'technical_sheets'), newSheet);
+                count++;
+            }
+            toast({
+                title: 'Importación completada',
+                description: `Se han añadido ${count} modelos a tu biblioteca.`
+            });
+        } catch (error) {
+            console.error("Error importing templates:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Hubo un problema al importar los modelos.'
+            });
+        } finally {
+            setImporting(false);
+        }
+    };
+
     const filteredSheets = sheets.filter(sheet =>
         sheet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sheet.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -79,10 +131,21 @@ export default function LibraryPage() {
                     <h1 className="text-3xl font-bold">Biblioteca de Modelos</h1>
                     <p className="text-muted-foreground">Gestiona tus fiches técnicas y consumos por talla.</p>
                 </div>
-                <Button onClick={() => { setEditingSheet(null); setIsEditorOpen(true); }} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Nueva Ficha Técnica
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={handleImportDefaults}
+                        disabled={importing || loading}
+                        className="gap-2"
+                    >
+                        {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Info className="h-4 w-4" />}
+                        Importar Modelos
+                    </Button>
+                    <Button onClick={() => { setEditingSheet(null); setIsEditorOpen(true); }} className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        Nueva Ficha Técnica
+                    </Button>
+                </div>
             </div>
 
             <div className="relative w-full md:w-[400px]">
@@ -107,9 +170,15 @@ export default function LibraryPage() {
                                 Comienza creando tu primera ficha técnica para automatizar el cálculo de insumos.
                             </p>
                         </div>
-                        <Button onClick={() => { setEditingSheet(null); setIsEditorOpen(true); }} variant="outline">
-                            Crear mi primera ficha
-                        </Button>
+                        <div className="flex flex-col gap-2 min-w-[200px]">
+                            <Button onClick={() => { setEditingSheet(null); setIsEditorOpen(true); }} variant="outline">
+                                Crear mi primera ficha
+                            </Button>
+                            <Button onClick={handleImportDefaults} disabled={importing}>
+                                {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Importar Modelos Básicos
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
             ) : (
