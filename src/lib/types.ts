@@ -59,6 +59,8 @@ export interface LineItem {
   sizePrices: SizePrice[];
   productImageUrls?: string[]; // Changed from productImageUrl
   description?: string;
+  templateId?: string; // Reference to the source technical sheet
+  sourceTemplateName?: string; // For display purposes
 }
 
 
