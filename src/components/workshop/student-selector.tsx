@@ -179,29 +179,34 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
     // Editing State
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
 
-    // When creating, if a filter is active, auto-fill the college name
+    // When creating, if a filter is active, auto-fill the college name or project ID
     useEffect(() => {
-        if (isCreateOpen && !editingStudent && selectedCollegeFilter !== "all") {
-            const match = selectedCollegeFilter.match(/^(.*)\s\((.*)\)$/);
-            if (match) {
-                const name = match[1];
-                const course = match[2];
-                const found = availableColleges.find(c => c.name === name && (c.course || '') === course);
-                if (found) {
-                    setNewCollege(found.id);
+        if (isCreateOpen && !editingStudent) {
+            if (sourceType === 'school' && selectedCollegeFilter !== "all") {
+                const match = selectedCollegeFilter.match(/^(.*)\s\((.*)\)$/);
+                if (match) {
+                    const name = match[1];
+                    const course = match[2];
+                    const found = availableColleges.find(c => c.id === name || (c.name === name && (c.course || '') === course));
+                    if (found) {
+                        setNewCollege(found.id);
+                    } else {
+                        setNewCollege(name); // Fallback
+                    }
                 } else {
-                    setNewCollege(name); // Fallback
+                    const found = availableColleges.find(c => c.id === selectedCollegeFilter || c.name === selectedCollegeFilter);
+                    if (found) {
+                        setNewCollege(found.id);
+                    } else {
+                        setNewCollege(selectedCollegeFilter);
+                    }
                 }
-            } else {
-                const found = availableColleges.find(c => c.name === selectedCollegeFilter);
-                if (found) {
-                    setNewCollege(found.id);
-                } else {
-                    setNewCollege(selectedCollegeFilter);
-                }
+            } else if (sourceType === 'project' && selectedProjectFilter !== "all") {
+                // Auto-fill project ID
+                setNewCollege(selectedProjectFilter);
             }
         }
-    }, [isCreateOpen, editingStudent, selectedCollegeFilter, availableColleges]);
+    }, [isCreateOpen, editingStudent, selectedCollegeFilter, selectedProjectFilter, availableColleges, sourceType]);
 
     // Handle Edit Click
     const handleEditClick = (e: React.MouseEvent, student: Student) => {
@@ -227,8 +232,17 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
         }
     };
 
-    const selectedCollegeConfig = availableColleges.find(c => c.id === newCollege || c.name === newCollege);
-    const garmentsToShow = selectedCollegeConfig?.priceList?.map(item => item.name) || ['Pantalon', 'Saco', 'Camisa', 'Polo', 'Deportivo', 'Falda'];
+    const selectedCollegeConfig = sourceType === 'school'
+        ? availableColleges.find(c => c.id === newCollege || c.name === newCollege)
+        : null;
+
+    const selectedProjectConfig = sourceType === 'project'
+        ? availableProjects.find(p => p.id === newCollege)
+        : null;
+
+    const garmentsToShow = sourceType === 'school'
+        ? (selectedCollegeConfig?.priceList?.map(item => item.name) || ['Pantalon', 'Saco', 'Camisa', 'Polo', 'Deportivo', 'Falda'])
+        : (selectedProjectConfig?.lineItems?.map(item => item.name) || []);
 
     const handleSaveStudent = async () => {
         if (!user || !newName || !newCollege) {
@@ -600,7 +614,9 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>{editingStudent ? 'Editar Registro' : 'Registrar Nuevo Estudiante'}</DialogTitle>
+                        <DialogTitle>
+                            {editingStudent ? 'Editar Registro' : (sourceType === 'school' ? 'Registrar Nuevo Estudiante' : 'Registrar Nuevo Participante')}
+                        </DialogTitle>
                     </DialogHeader>
 
                     <div className="grid gap-4 py-4">
@@ -665,7 +681,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
                             {!newCollege ? (
                                 <p className="text-sm text-muted-foreground italic bg-slate-100 p-3 rounded-md">
-                                    👈 Primero selecciona un colegio para ver sus prendas.
+                                    👈 {sourceType === 'school' ? 'Primero selecciona un colegio pour ver sus prendas.' : 'Primero selecciona un proyecto para ver sus prendas.'}
                                 </p>
                             ) : garmentsToShow.length === 0 ? (
                                 <p className="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-md">
