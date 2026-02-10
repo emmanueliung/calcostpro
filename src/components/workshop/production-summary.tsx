@@ -353,7 +353,24 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                     )}
 
                     {Object.keys(materialAggregates).length > 0 ? (
-                        <div className="mt-12 pt-8 border-t-2 border-slate-200">
+                        <div className="mt-12 pt-8 border-t-2 border-slate-200 print:break-before-page print:border-none print:pt-0">
+                            {/* Print-Only Header for Material Summary */}
+                            <div className="hidden print:block mb-6 pt-8">
+                                <h1 className="text-2xl font-bold uppercase mb-2">
+                                    REQUERIMIENTO DE MATERIALES
+                                </h1>
+                                <div className="flex justify-between items-end border-b-2 border-black pb-2">
+                                    <div>
+                                        <p className="text-sm font-medium">Colegio / Proyecto:</p>
+                                        <p className="text-lg font-bold">{collegeName === 'all' ? 'Todos los colegios' : collegeName}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-medium">Fecha:</p>
+                                        <p className="text-lg font-bold">{new Date().toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <h3 className="text-xl font-black uppercase tracking-tight mb-4 flex items-center gap-2">
                                 <ShoppingBag className="h-5 w-5" />
                                 Necesidad de Materiales (Compra Global)

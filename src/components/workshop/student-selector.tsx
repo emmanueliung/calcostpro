@@ -238,6 +238,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
         setIsCreating(true);
         try {
+            // Common Data Preparation
             const matchedConfig = availableColleges.find(c => c.id === newCollege || c.name === newCollege);
             const hiddenClassroom = matchedConfig?.course || '';
             const collegeName = matchedConfig?.name || newCollege;
@@ -250,149 +251,177 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 if (sizes[key]?.trim()) cleanSizes[key] = sizes[key].trim().toUpperCase();
             });
 
-            console.log('[DEBUG] Saving student sizes:', cleanSizes);
+            console.log('[DEBUG] Saving student/participant sizes:', cleanSizes);
 
-            const studentData = {
-                userId: user.uid,
-                name: newName.trim(),
-                college: collegeName,
-                collegeId: collegeId,
-                gender: newGender,
-                classroom: hiddenClassroom,
-                notes: newNotes.trim(),
-                measurements: defaultMeasurements,
-                sizes: cleanSizes,
-            };
-
-            if (editingStudent) {
-                // 1. UPDATE STUDENT DOCUMENT
-                const docRef = doc(db, "students", editingStudent.id);
-                // @ts-ignore
-                await updateDoc(docRef, {
-                    ...studentData,
-                    updatedAt: serverTimestamp()
-                });
-                toast({ title: 'Estudiante actualizado', description: `${newName} ha sido modificado.` });
-
-                if (selectedStudentId === editingStudent.id) {
-                    onSelectStudent({ ...editingStudent, ...studentData, sizes: cleanSizes });
+            if (sourceType === 'project') {
+                if (!newCollege) { // In project mode, newCollege holds the project ID
+                    toast({ variant: 'destructive', title: 'Error', description: 'Seleccione un proyecto.' });
+                    return;
                 }
 
-                // 2. UPDATE ORDERS SYNC (with simplified query & local filtering)
-                try {
-                    console.log(`[DEBUG] Starting sync to orders for student ${editingStudent.id}`);
-                    const ordersRef = collection(db, "orders");
+                // Prepare Fitting Data
+                const fittingData = {
+                    personName: newName.trim(),
+                    email: newNotes.trim(), // Using notes field for email or extra info
+                    sizes: cleanSizes,
+                    confirmed: false,
+                    userId: user.uid,
+                    createdAt: serverTimestamp()
+                };
 
-                    // The simplest query (by userId) is guaranteed to pass security rules
-                    const q = query(
-                        ordersRef,
-                        where("userId", "==", user.uid)
-                    );
+                if (editingStudent) {
+                    await updateDoc(doc(db, "projects", newCollege, "fittings", editingStudent.id), fittingData);
+                    toast({ title: 'Participante actualizado' });
+                    // No need to manually update state as onSnapshot handles it
+                } else {
+                    await addDoc(collection(db, "projects", newCollege, "fittings"), fittingData);
+                    toast({ title: 'Participante registrado' });
+                }
 
-                    console.log(`[DEBUG] Fetching all orders for user ${user.uid} to filter locally...`);
-                    const querySnapshot = await getDocs(q);
-                    console.log(`[DEBUG] Successfully fetched ${querySnapshot.size} total orders.`);
+            } else {
+                // SCHOOL MODE
+                const studentData = {
+                    userId: user.uid,
+                    name: newName.trim(),
+                    college: collegeName,
+                    collegeId: collegeId,
+                    gender: newGender,
+                    classroom: hiddenClassroom,
+                    notes: newNotes.trim(),
+                    measurements: defaultMeasurements,
+                    sizes: cleanSizes,
+                };
 
-                    if (!querySnapshot.empty) {
-                        const batch = writeBatch(db);
-                        let batchCount = 0;
+                if (editingStudent) {
+                    // 1. UPDATE STUDENT DOCUMENT
+                    const docRef = doc(db, "students", editingStudent.id);
+                    // @ts-ignore
+                    await updateDoc(docRef, {
+                        ...studentData,
+                        updatedAt: serverTimestamp()
+                    });
+                    toast({ title: 'Estudiante actualizado', description: `${newName} ha sido modificado.` });
 
-                        // Filter relevant orders locally
-                        const relevantOrders = querySnapshot.docs.filter(docSnap => {
-                            const data = docSnap.data();
-                            return data.studentId === editingStudent.id &&
-                                ["pending", "in_production", "ready"].includes(data.status);
-                        });
+                    if (selectedStudentId === editingStudent.id) {
+                        onSelectStudent({ ...editingStudent, ...studentData, sizes: cleanSizes });
+                    }
 
-                        console.log(`[DEBUG] Found ${relevantOrders.length} relevant orders to check.`);
+                    // 2. UPDATE ORDERS SYNC (with simplified query & local filtering)
+                    try {
+                        console.log(`[DEBUG] Starting sync to orders for student ${editingStudent.id}`);
+                        const ordersRef = collection(db, "orders");
 
-                        relevantOrders.forEach((docSnap) => {
-                            const order = docSnap.data();
-                            let orderUpdated = false;
-                            const updateData: any = {
-                                userId: user.uid, // Explicitly include userId to satisfy security rules
-                                updatedAt: serverTimestamp()
-                            };
+                        // The simplest query (by userId) is guaranteed to pass security rules
+                        const q = query(
+                            ordersRef,
+                            where("userId", "==", user.uid)
+                        );
 
-                            // Sync Denormalized Data
-                            if (order.studentName !== newName.trim()) {
-                                updateData.studentName = newName.trim();
-                                orderUpdated = true;
-                                console.log(`[DEBUG] Order ${docSnap.id}: Updating name`);
-                            }
-                            if (order.college !== collegeName) {
-                                updateData.college = collegeName;
-                                orderUpdated = true;
-                                console.log(`[DEBUG] Order ${docSnap.id}: Updating college`);
-                            }
-                            if (order.studentGender !== newGender) {
-                                updateData.studentGender = newGender;
-                                orderUpdated = true;
-                                console.log(`[DEBUG] Order ${docSnap.id}: Updating gender`);
-                            }
+                        console.log(`[DEBUG] Fetching all orders for user ${user.uid} to filter locally...`);
+                        const querySnapshot = await getDocs(q);
+                        console.log(`[DEBUG] Successfully fetched ${querySnapshot.size} total orders.`);
 
-                            // Sync Item Sizes
-                            // @ts-ignore
-                            const updatedItems = order.items.map((item: any) => {
-                                const isSurMesure = item.type === 'sur_mesure' || !item.type;
-                                const productName = item.productName.trim();
+                        if (!querySnapshot.empty) {
+                            const batch = writeBatch(db);
+                            let batchCount = 0;
 
-                                if (isSurMesure) {
-                                    let newSize = cleanSizes[productName];
-                                    if (!newSize) {
-                                        const matchingKey = Object.keys(cleanSizes).find(
-                                            key => key.toLowerCase() === productName.toLowerCase()
-                                        );
-                                        if (matchingKey) newSize = cleanSizes[matchingKey];
-                                    }
-
-                                    if (newSize) {
-                                        const currentSize = (item.size || '').toUpperCase();
-                                        const newSizeUpper = newSize.toUpperCase();
-                                        if (currentSize !== newSizeUpper) {
-                                            orderUpdated = true;
-                                            console.log(`[DEBUG] Order ${docSnap.id} - ${productName}: "${currentSize}" -> "${newSizeUpper}"`);
-                                            return { ...item, size: newSizeUpper };
-                                        }
-                                    }
-                                }
-                                return item;
+                            // Filter relevant orders locally
+                            const relevantOrders = querySnapshot.docs.filter(docSnap => {
+                                const data = docSnap.data();
+                                return data.studentId === editingStudent.id &&
+                                    ["pending", "in_production", "ready"].includes(data.status);
                             });
 
-                            if (orderUpdated) {
-                                updateData.items = updatedItems;
-                                batch.update(docSnap.ref, updateData);
-                                batchCount++;
+                            console.log(`[DEBUG] Found ${relevantOrders.length} relevant orders to check.`);
+
+                            relevantOrders.forEach((docSnap) => {
+                                const order = docSnap.data();
+                                let orderUpdated = false;
+                                const updateData: any = {
+                                    userId: user.uid, // Explicitly include userId to satisfy security rules
+                                    updatedAt: serverTimestamp()
+                                };
+
+                                // Sync Denormalized Data
+                                if (order.studentName !== newName.trim()) {
+                                    updateData.studentName = newName.trim();
+                                    orderUpdated = true;
+                                    console.log(`[DEBUG] Order ${docSnap.id}: Updating name`);
+                                }
+                                if (order.college !== collegeName) {
+                                    updateData.college = collegeName;
+                                    orderUpdated = true;
+                                    console.log(`[DEBUG] Order ${docSnap.id}: Updating college`);
+                                }
+                                if (order.studentGender !== newGender) {
+                                    updateData.studentGender = newGender;
+                                    orderUpdated = true;
+                                    console.log(`[DEBUG] Order ${docSnap.id}: Updating gender`);
+                                }
+
+                                // Sync Item Sizes
+                                // @ts-ignore
+                                const updatedItems = order.items.map((item: any) => {
+                                    const isSurMesure = item.type === 'sur_mesure' || !item.type;
+                                    const productName = item.productName.trim();
+
+                                    if (isSurMesure) {
+                                        let newSize = cleanSizes[productName];
+                                        if (!newSize) {
+                                            const matchingKey = Object.keys(cleanSizes).find(
+                                                key => key.toLowerCase() === productName.toLowerCase()
+                                            );
+                                            if (matchingKey) newSize = cleanSizes[matchingKey];
+                                        }
+
+                                        if (newSize) {
+                                            const currentSize = (item.size || '').toUpperCase();
+                                            const newSizeUpper = newSize.toUpperCase();
+                                            if (currentSize !== newSizeUpper) {
+                                                orderUpdated = true;
+                                                console.log(`[DEBUG] Order ${docSnap.id} - ${productName}: "${currentSize}" -> "${newSizeUpper}"`);
+                                                return { ...item, size: newSizeUpper };
+                                            }
+                                        }
+                                    }
+                                    return item;
+                                });
+
+                                if (orderUpdated) {
+                                    updateData.items = updatedItems;
+                                    batch.update(docSnap.ref, updateData);
+                                    batchCount++;
+                                }
+                            });
+
+                            if (batchCount > 0) {
+                                console.log(`[DEBUG] Committing ${batchCount} order updates...`);
+                                await batch.commit();
+                                console.log(`[DEBUG] Batch commit successful.`);
+                                toast({ title: "Pedidos actualizados", description: `${batchCount} pedidos fueron sincronizados.` });
+                            } else {
+                                console.log(`[DEBUG] No updates required for relevant orders.`);
                             }
-                        });
-
-                        if (batchCount > 0) {
-                            console.log(`[DEBUG] Committing ${batchCount} order updates...`);
-                            await batch.commit();
-                            console.log(`[DEBUG] Batch commit successful.`);
-                            toast({ title: "Pedidos actualizados", description: `${batchCount} pedidos fueron sincronizados.` });
-                        } else {
-                            console.log(`[DEBUG] No updates required for relevant orders.`);
                         }
+                    } catch (err) {
+                        console.error("Error syncing to orders:", err);
                     }
-                } catch (err) {
-                    console.error("Error syncing to orders:", err);
-                }
-            } else {
-                // CREATE
-                // @ts-ignore
-                const docRef = await addDoc(collection(db, "students"), {
-                    ...studentData,
-                    createdAt: serverTimestamp()
-                });
+                } else {
+                    // CREATE
+                    // @ts-ignore
+                    const docRef = await addDoc(collection(db, "students"), {
+                        ...studentData,
+                        createdAt: serverTimestamp()
+                    });
 
-                const createdStudent: Student = {
-                    id: docRef.id,
-                    ...studentData,
-                    createdAt: new Date(),
-                };
-                onSelectStudent(createdStudent);
-                toast({ title: 'Estudiante creado', description: `${newName} ha sido registrado.` });
+                    const createdStudent: Student = {
+                        id: docRef.id,
+                        ...studentData,
+                        createdAt: new Date(),
+                    };
+                    onSelectStudent(createdStudent);
+                    toast({ title: 'Estudiante creado', description: `${newName} ha sido registrado.` });
+                }
             }
 
             setIsCreateOpen(false);
@@ -560,17 +589,15 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 setIsCreateOpen(open);
                 if (!open) resetForm();
             }}>
-                {sourceType === 'school' && (
-                    <DialogTrigger asChild>
-                        <Button className="w-full" variant="outline" onClick={() => {
-                            setEditingStudent(null);
-                            resetForm();
-                        }}>
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Nuevo Estudiante
-                        </Button>
-                    </DialogTrigger>
-                )}
+                <DialogTrigger asChild>
+                    <Button className="w-full" variant="outline" onClick={() => {
+                        setEditingStudent(null);
+                        resetForm();
+                    }}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        {sourceType === 'school' ? 'Nuevo Estudiante' : 'Nuevo Participante'}
+                    </Button>
+                </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>{editingStudent ? 'Editar Registro' : 'Registrar Nuevo Estudiante'}</DialogTitle>

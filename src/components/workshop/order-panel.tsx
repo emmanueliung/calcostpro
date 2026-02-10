@@ -174,10 +174,13 @@ export function OrderPanel({ student, items, onAddItem, onRemoveItem }: OrderPan
                                                 key={idx}
                                                 variant="outline"
                                                 className="h-auto py-3 flex flex-col items-start gap-1 text-left bg-white hover:bg-primary/5 hover:border-primary"
-                                                onClick={() => handleAddConfiguredItem(item.name, 0)} // Price 0 for projects (global billing usually)
+                                                onClick={() => handleAddConfiguredItem(item.name, 0)}
                                             >
                                                 <span className="font-semibold">{item.name}</span>
-                                                <span className="text-xs text-muted-foreground">Proyecto</span>
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                    <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                                                    Incluido en Proyecto
+                                                </span>
                                             </Button>
                                         ))}
                                     </div>
