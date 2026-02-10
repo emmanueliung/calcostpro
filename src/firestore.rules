@@ -22,7 +22,7 @@ service cloud.firestore {
         allow read: if true; // Publicly readable for the link to work initially
         
         // Logged-in users (the owner) can create, update, delete
-        allow create, delete: if request.auth != null && get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid;
+        allow create, update, delete: if request.auth != null && get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid;
         
         // Anyone can confirm a fitting, but ONLY if changing 'confirmed' from false to true.
         // This is the key rule for the public confirmation link.
