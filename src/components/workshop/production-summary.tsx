@@ -227,7 +227,8 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
             </CardHeader>
             <CardContent className="p-6" ref={printRef}>
                 <div className="print:p-8">
-                    <div className="hidden print:block mb-6">
+                    {/* General Summary - Hidden in Print */}
+                    <div className="print:hidden mb-6">
                         <h1 className="text-2xl font-bold uppercase">
                             Producción: {selectedGarment === 'all' ? 'GENERAL' : selectedGarment}
                         </h1>
@@ -243,8 +244,8 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                         </div>
                     </div>
 
-                    {/* Compact Summary Totals Table */}
-                    <div className="mb-8">
+                    {/* Compact Summary Totals Table - Hidden in Print */}
+                    <div className="mb-8 print:hidden">
                         <h3 className="text-lg font-bold border-b pb-2 mb-4 uppercase text-xs tracking-wide">Resumen General por Confección</h3>
                         <div className="border rounded-md overflow-hidden bg-white">
                             <Table>
@@ -278,7 +279,7 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                     {Object.keys(groupedSummary).length === 0 ? (
                         <p className="text-center py-8 text-muted-foreground">No hay datos para resumir</p>
                     ) : (
-                        <div className="space-y-8">
+                        <div className="space-y-8 print:space-y-0">
                             {Object.entries(groupedSummary).sort(([a], [b]) => a.localeCompare(b)).map(([garment, genders], idx) => {
                                 const hombreTotal = Object.values(genders['Hombre'] || {}).reduce((s, q) => s + q, 0);
                                 const mujerTotal = Object.values(genders['Mujer'] || {}).reduce((s, q) => s + q, 0);
@@ -286,9 +287,25 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                                 return (
                                     <div
                                         key={garment}
-                                        className="space-y-4"
-                                        style={{ breakBefore: idx > 0 ? 'page' : 'auto' }}
+                                        className="space-y-4 print:break-before-page print:pt-8"
                                     >
+                                        {/* Print-Only Header for Each Page/Garment */}
+                                        <div className="hidden print:block mb-6">
+                                            <h1 className="text-2xl font-bold uppercase mb-2">
+                                                Producción: {garment}
+                                            </h1>
+                                            <div className="flex justify-between items-end border-b-2 border-black pb-2">
+                                                <div>
+                                                    <p className="text-sm font-medium">Colegio / Proyecto:</p>
+                                                    <p className="text-lg font-bold">{collegeName === 'all' ? 'Todos los colegios' : collegeName}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-medium">Total Prenda:</p>
+                                                    <p className="text-xl font-bold">{total}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="flex items-center justify-between border-b pb-2">
                                             <h3 className="text-xl font-black uppercase tracking-tight">
                                                 {garment}
@@ -304,10 +321,10 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                                             {Object.entries(genders).sort(([a], [b]) => b.localeCompare(a)).map(([gender, sizes]) => {
                                                 const genderTotal = Object.values(sizes).reduce((s, q) => s + q, 0);
                                                 return (
-                                                    <div key={gender} className="border rounded-md overflow-hidden bg-white">
-                                                        <div className={`px-3 py-2 text-sm font-bold border-b flex justify-between items-center ${gender === 'Mujer' ? 'bg-pink-50 text-pink-700' : 'bg-blue-50 text-blue-700'}`}>
+                                                    <div key={gender} className="border rounded-md overflow-hidden bg-white print:border-black">
+                                                        <div className={`px-3 py-2 text-sm font-bold border-b flex justify-between items-center ${gender === 'Mujer' ? 'bg-pink-50 text-pink-700 print:bg-gray-100 print:text-black' : 'bg-blue-50 text-blue-700 print:bg-gray-100 print:text-black'}`}>
                                                             <span>{gender}</span>
-                                                            <span className="text-[10px] bg-white/50 px-2 py-0.5 rounded-full">Total: {genderTotal}</span>
+                                                            <span className="text-[10px] bg-white/50 px-2 py-0.5 rounded-full print:border print:border-black">Total: {genderTotal}</span>
                                                         </div>
                                                         <Table>
                                                             <TableHeader>
