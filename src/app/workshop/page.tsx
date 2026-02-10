@@ -92,24 +92,24 @@ export default function WorkshopPage() {
                 if (item.size) sizes[item.productName] = item.size;
             });
 
-            await updateDoc(doc(db, "projects", selectedStudent.projectId, "fittings", selectedStudent.id), {
+            const fittingRef = doc(db, "projects", selectedStudent.projectId, "fittings", selectedStudent.id);
+            await updateDoc(fittingRef, {
                 sizes: sizes,
                 confirmed: true,
-                confirmedAt: serverTimestamp() // Mark timestamp
+                confirmedAt: serverTimestamp(),
+                userId: user.uid // Ensure userId is present for security rules
             });
 
             // 2. Create "Shadow Order" for Production Summary
-            // Check if order already exists? Ideally yes, but multiple orders allowed.
-            // For now, create new one.
             await addDoc(collection(db, "orders"), {
                 userId: user.uid,
                 studentId: selectedStudent.id,
                 studentName: selectedStudent.name,
                 studentGender: selectedStudent.gender || 'Hombre',
-                college: selectedStudent.college, // Project Name
+                college: selectedStudent.college,
                 items: currentItems,
                 status: 'in_production',
-                totalAmount: 0, // Project billing
+                totalAmount: 0,
                 paidAmount: 0,
                 balance: 0,
                 createdAt: serverTimestamp(),
@@ -118,15 +118,20 @@ export default function WorkshopPage() {
                 projectId: selectedStudent.projectId
             });
 
-            toast({ title: '¡Guardado!', description: 'Medidas guardadas y enviadas a producción.' });
+            toast({ title: '¡Guardado!', description: 'Medidas guardadas et enviadas a producción.' });
 
             // 3. Reset State
             setCurrentItems([]);
             setSelectedStudent(null);
 
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Ocurrió un error al guardar el proyecto.' });
+        } catch (error: any) {
+            console.error("Error saving project order:", error);
+            const errorMsg = error.message || 'Error desconocido';
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: `No se pudo guardar: ${errorMsg}`
+            });
         } finally {
             setIsProcessing(false);
         }
