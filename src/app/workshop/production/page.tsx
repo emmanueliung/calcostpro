@@ -268,7 +268,7 @@ function ProductionPageContent() {
             </div>
 
             {selectedCollege !== 'all' && (
-                <Card className="bg-slate-900 text-white overflow-hidden border-none shadow-lg">
+                <Card className="bg-navy-gradient text-white overflow-hidden border-none shadow-lg">
                     <CardContent className="p-0">
                         <div className="flex flex-col md:flex-row">
                             <div className="p-6 md:w-2/3 space-y-4">

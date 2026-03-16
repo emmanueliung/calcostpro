@@ -82,6 +82,14 @@ html {
   font-size: 14px;
 }
 
+.bg-navy-gradient {
+  background: linear-gradient(135deg, #151b2a 0%, #1e293b 100%);
+}
+
+.bg-premium-gradient {
+  background: linear-gradient(135deg, #151b2a 0%, #0ea5e9 140%);
+}
+
 @media print {
   body {
     -webkit-print-color-adjust: exact;

@@ -33,20 +33,20 @@ export default {
           foreground: 'hsl(var(--popover-foreground))',
         },
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: '#151b2a', // Deep Navy
+          foreground: '#f8fafc',
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
+          DEFAULT: '#0ea5e9', // Sea Blue
+          foreground: '#151b2a',
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
+          DEFAULT: '#f1f5f9',
+          foreground: '#64748b',
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: '#0ea5e9',
+          foreground: '#f8fafc',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',

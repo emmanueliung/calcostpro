@@ -183,7 +183,7 @@ export function OnlineOrdersView() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-purple-600">
+                        <div className="text-2xl font-bold text-primary">
                             {getOrderCount('in_production')}
                         </div>
                     </CardContent>
