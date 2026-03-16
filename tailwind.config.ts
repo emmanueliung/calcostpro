@@ -33,19 +33,19 @@ export default {
           foreground: 'hsl(var(--popover-foreground))',
         },
         primary: {
-          DEFAULT: '#151b2a', // Deep Navy
+          DEFAULT: '#1a365d', // Deep Navy (Lighter than before)
           foreground: '#f8fafc',
         },
         secondary: {
-          DEFAULT: '#0ea5e9', // Sea Blue
-          foreground: '#151b2a',
+          DEFAULT: '#0284c7', // Sea Blue (Slightly deeper but vibrant)
+          foreground: '#ffffff',
         },
         muted: {
           DEFAULT: '#f1f5f9',
           foreground: '#64748b',
         },
         accent: {
-          DEFAULT: '#0ea5e9',
+          DEFAULT: '#0284c7',
           foreground: '#f8fafc',
         },
         destructive: {
