@@ -14,16 +14,16 @@
     --popover: 0 0% 100%; /* white */
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 215 50% 23%; /* #1a365d - Lighter Navy */
+    --primary: 213 96% 28%; /* #033E8C */
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 199 89% 39%; /* #0284c7 - Sea Blue */
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 33 84% 67%; /* #F2B366 - Sandy Orange */
+    --secondary-foreground: 208 88% 18%; /* #053259 */
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 199 89% 39%; /* Sea Blue Accents */
+    --accent: 208 94% 28%; /* #044D8C */
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
@@ -31,7 +31,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 215 50% 23%; /* Navy Ring */
+    --ring: 213 96% 28%;
 
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -83,11 +83,11 @@ html {
 }
 
 .bg-navy-gradient {
-  background: linear-gradient(135deg, #1a365d 0%, #2b4c7e 100%);
+  background: linear-gradient(135deg, #033E8C 0%, #053259 100%);
 }
 
 .bg-premium-gradient {
-  background: linear-gradient(135deg, #1a365d 0%, #0284c7 140%);
+  background: linear-gradient(135deg, #033E8C 0%, #F2B366 140%);
 }
 
 @media print {

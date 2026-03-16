@@ -33,20 +33,20 @@ export default {
           foreground: 'hsl(var(--popover-foreground))',
         },
         primary: {
-          DEFAULT: '#1a365d', // Deep Navy (Lighter than before)
-          foreground: '#f8fafc',
-        },
-        secondary: {
-          DEFAULT: '#0284c7', // Sea Blue (Slightly deeper but vibrant)
+          DEFAULT: '#033E8C', // Thong-Dong-2 Deep Blue
           foreground: '#ffffff',
         },
+        secondary: {
+          DEFAULT: '#F2B366', // Thong-Dong-5 Sandy Orange/Gold
+          foreground: '#053259',
+        },
         muted: {
-          DEFAULT: '#f1f5f9',
-          foreground: '#64748b',
+          DEFAULT: '#D9D7D7', // Thong-Dong-1 Light Grey
+          foreground: '#053259',
         },
         accent: {
-          DEFAULT: '#0284c7',
-          foreground: '#f8fafc',
+          DEFAULT: '#044D8C', // Thong-Dong-3 Medium Blue
+          foreground: '#ffffff',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
