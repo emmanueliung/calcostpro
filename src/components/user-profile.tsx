@@ -68,8 +68,8 @@ export function UserProfile() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-auto w-auto p-1">
-          <Menu className="h-6 w-6" />
+        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
+          <Menu className="h-5 w-5" />
           <span className="sr-only">Abrir menú</span>
         </Button>
       </DropdownMenuTrigger>

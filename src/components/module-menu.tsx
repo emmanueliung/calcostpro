@@ -30,7 +30,7 @@ export function ModuleMenu() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative h-9 w-9">
+                <Button variant="ghost" size="icon" className="h-9 w-9 text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
                     <LayoutGrid className="h-5 w-5" />
                 </Button>
             </DropdownMenuTrigger>

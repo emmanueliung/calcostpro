@@ -11,23 +11,25 @@ import { ModuleMenu } from './module-menu';
 // This is now a simple server component that just structures the header.
 export function Header() {
   return (
-    <header className="sticky top-0 z-10 w-full bg-background/80 backdrop-blur-sm border-b no-print">
+    <header className="sticky top-0 z-10 w-full bg-primary text-primary-foreground border-b border-white/10 no-print shadow-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Image
-              src="/logo-calcostpro.png"
-              alt="CalcostPro Logo"
-              width={100}
-              height={50}
-              className="object-contain"
-            />
+            <div className="bg-white/10 p-1.5 rounded-lg backdrop-blur-sm border border-white/20">
+              <Image
+                src="/logo-calcostpro.png"
+                alt="CalcostPro Logo"
+                width={110}
+                height={45}
+                className="object-contain brightness-0 invert"
+              />
+            </div>
           </Link>
         </div>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="ghost" size="icon" className="h-auto w-auto p-1">
+        <div className="flex items-center gap-3">
+          <Button asChild variant="ghost" size="icon" className="h-9 w-9 text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
             <Link href="/dashboard" aria-label="Escritorio">
-              <Home className="h-6 w-6" />
+              <Home className="h-5 w-5" />
             </Link>
           </Button>
           <ModuleMenu />
