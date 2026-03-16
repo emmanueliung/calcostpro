@@ -222,10 +222,10 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
 
     const handleDeleteStudent = async (e: React.MouseEvent, studentId: string) => {
         e.stopPropagation();
-        if (!confirm("¿Estás seguro de eliminar este estudiante?")) return;
+        if (!confirm("¿Estás seguro de eliminar este participante?")) return;
         try {
             await deleteDoc(doc(db, "students", studentId));
-            toast({ title: "Estudiante eliminado" });
+            toast({ title: "Participante eliminado" });
         } catch (err) {
             console.error(err);
             toast({ variant: "destructive", title: "Error al eliminar" });
@@ -314,7 +314,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                         ...studentData,
                         updatedAt: serverTimestamp()
                     });
-                    toast({ title: 'Estudiante actualizado', description: `${newName} ha sido modificado.` });
+                    toast({ title: 'Participante actualizado', description: `${newName} ha sido modificado.` });
 
                     if (selectedStudentId === editingStudent.id) {
                         onSelectStudent({ ...editingStudent, ...studentData, sizes: cleanSizes });
@@ -434,7 +434,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                         createdAt: new Date(),
                     };
                     onSelectStudent(createdStudent);
-                    toast({ title: 'Estudiante creado', description: `${newName} ha sido registrado.` });
+                    toast({ title: 'Participante registrado', description: `${newName} ha sido registrado.` });
                 }
             }
 
@@ -512,7 +512,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
             <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Buscar por nombre o colegio..."
+                    placeholder="Buscar por nombre o cliente..."
                     className="pl-8"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}

@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useReactToPrint } from 'react-to-print';
 import { useRef, useState, useEffect } from 'react';
-import { useFirestore } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { useUser, useFirestore } from '@/firebase';
 import { ProjectConfiguration } from '@/lib/types';
 import { FITTING_SIZE_FACTORS } from '@/lib/calculation-helpers';
 
@@ -28,6 +28,7 @@ interface SummaryItem {
 }
 
 export function ProductionSummary({ orders, collegeName }: ProductionSummaryProps) {
+    const { user } = useUser();
     const db = useFirestore();
     const printRef = useRef<HTMLDivElement>(null);
     const [selectedGarment, setSelectedGarment] = useState<string>("all");
@@ -71,13 +72,13 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                 return !Object.values(newConfigs).some(p => p.projectDetails.projectName === name);
             });
 
-            if (collegesToSearch.length > 0) {
-                // Since Firestore doesn't support easy "contains" or multiple queries in one batch easily here without 'in'
-                // and we might have many colleges, we'll fetch recently created projects or just try to find them.
-                // For simplicity and performance, we'll query for projects where projectDetails.projectName matches
-                const { collection, query, where, getDocs } = await import('firebase/firestore');
+            if (collegesToSearch.length > 0 && user) {
                 for (const name of collegesToSearch) {
-                    const q = query(collection(db, "projects"), where("projectDetails.projectName", "==", name));
+                    const q = query(
+                        collection(db, "projects"), 
+                        where("userId", "==", user.uid),
+                        where("projectDetails.projectName", "==", name)
+                    );
                     const snap = await getDocs(q);
                     snap.forEach(d => {
                         if (!newConfigs[d.id]) {

@@ -1,0 +1,11 @@
+﻿ src/app/order/[userId]/page.tsx                  | 315 +++++++++++------------
+ src/app/workshop/page.tsx                        |  54 +++-
+ src/app/workshop/production/page.tsx             | 311 ++++++++++++----------
+ src/components/dashboard/online-orders-table.tsx | 105 ++++----
+ src/components/dashboard/order-detail-dialog.tsx | 223 ++++++++--------
+ src/components/public/qr-payment-display.tsx     | 152 -----------
+ src/components/workshop/material-needs.tsx       |   4 +-
+ src/components/workshop/order-panel.tsx          |   2 +-
+ src/components/workshop/student-selector.tsx     |  10 +-
+ src/lib/types.ts                                 |   7 +-
+ 10 files changed, 555 insertions(+), 628 deletions(-)

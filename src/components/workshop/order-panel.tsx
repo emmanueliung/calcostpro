@@ -137,7 +137,7 @@ export function OrderPanel({ student, items, onAddItem, onRemoveItem }: OrderPan
     if (!student) {
         return (
             <Card className="h-full flex flex-col justify-center items-center text-muted-foreground p-6">
-                <p>Seleccione un estudiante para comenzar el pedido.</p>
+                <p>Seleccione un participante para comenzar el pedido.</p>
             </Card>
         );
     }

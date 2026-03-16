@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 
 interface MinimalOrder {
     id: string;
-    items: {
+    items?: {
         productName: string;
         quantity: number;
         size?: string;
@@ -55,7 +55,7 @@ export function MaterialNeeds({ orders }: MaterialNeedsProps) {
         let itemsWithNoSheet = 0;
 
         orders.forEach(order => {
-            order.items.forEach(item => {
+            (order.items || []).forEach(item => {
                 const sheet = technicalSheets.find(s => s.id === item.technicalSheetId);
 
                 if (!sheet) {

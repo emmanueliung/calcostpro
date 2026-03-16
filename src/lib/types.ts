@@ -252,11 +252,12 @@ export interface CustomerInfo {
 export interface PublicOrder {
   id: string;
   userId: string;              // Owner of the workshop
-  customer: CustomerInfo;      // Client information
-  college: string;             // College name
-  items: OrderItem[];          // Order items
+  customer?: CustomerInfo;      // Client information (made optional)
+  college?: string;             // College name (made optional)
+  items?: OrderItem[];          // Order items (made optional)
   status: PublicOrderStatus;
   totalAmount: number;
+  declaredAmount?: number;      // Amount declared by payer
   paymentProofUrl?: string;    // Screenshot of QR payment
   createdAt: any;
   updatedAt: any;

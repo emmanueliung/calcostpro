@@ -9,13 +9,15 @@ import { PaymentPanel } from '@/components/workshop/payment-panel';
 import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Save, ClipboardList, ArrowRight, CheckCircle2, User, ShoppingCart, CreditCard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 export default function WorkshopPage() {
     const { user } = useUser();
     const db = useFirestore();
     const { toast } = useToast();
+    const router = useRouter();
 
     // Global State
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -66,11 +68,18 @@ export default function WorkshopPage() {
                 date: serverTimestamp(),
             });
 
-            toast({ title: '¡Éxito!', description: 'Pedido y pago registrados correctamente.' });
+            const clientName = selectedStudent.college;
+            toast({
+                title: '¡Pedido registrado!',
+                description: `El pedido de ${selectedStudent.name} fue guardado correctamente.`
+            });
 
             // 3. Reset State
             setCurrentItems([]);
             setSelectedStudent(null);
+
+            // 4. Navigate to production pre-filtered by client
+            router.push(`/workshop/production?client=${encodeURIComponent(clientName)}`);
 
         } catch (error) {
             console.error(error);
@@ -118,11 +127,15 @@ export default function WorkshopPage() {
                 projectId: selectedStudent.projectId
             });
 
-            toast({ title: '¡Guardado!', description: 'Medidas guardadas et enviadas a producción.' });
+            const projectName = selectedStudent.college;
+            toast({ title: '¡Guardado!', description: 'Medidas guardadas y enviadas a producción.' });
 
             // 3. Reset State
             setCurrentItems([]);
             setSelectedStudent(null);
+
+            // 4. Navigate to production pre-filtered by project
+            router.push(`/workshop/production?client=${encodeURIComponent(projectName)}`);
 
         } catch (error: any) {
             console.error("Error saving project order:", error);
@@ -138,7 +151,39 @@ export default function WorkshopPage() {
     };
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-full min-h-[calc(100vh-8rem)]">
+        <div className="flex flex-col gap-4 h-full min-h-[calc(100vh-8rem)]">
+
+            {/* Stage Navigation Bar */}
+            <div className="flex items-center gap-1 bg-white border rounded-xl px-4 py-2.5 shadow-sm">
+                <div className="flex items-center gap-2 text-primary">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold">1</div>
+                    <span className="text-sm font-semibold">Identificación</span>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-300 mx-1 shrink-0" />
+                <div className="flex items-center gap-2 text-primary">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold">2</div>
+                    <span className="text-sm font-semibold">Pedido</span>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-300 mx-1 shrink-0" />
+                <div className="flex items-center gap-2 text-primary">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold">3</div>
+                    <span className="text-sm font-semibold">Cobro</span>
+                </div>
+                <div className="ml-auto">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-slate-600 hover:text-primary hover:border-primary"
+                        onClick={() => router.push('/workshop/production')}
+                    >
+                        <ClipboardList className="h-4 w-4" />
+                        Gestión de Pedidos
+                        <ArrowRight className="h-3 w-3" />
+                    </Button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1">
 
             {/* Column 1: Identification (3 cols) */}
             <div className="md:col-span-3 flex flex-col gap-4">
@@ -207,6 +252,7 @@ export default function WorkshopPage() {
                     />
                 )}
             </div>
+        </div>
         </div>
     );
 }
