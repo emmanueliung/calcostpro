@@ -280,7 +280,7 @@ function ProductionPageContent() {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="h-7 text-slate-400 hover:text-white -ml-2 gap-1 px-2"
+                                            className="h-7 text-white/60 hover:text-white -ml-2 gap-1 px-2"
                                             onClick={() => setSelectedCollege('all')}
                                         >
                                             <ArrowLeft className="h-4 w-4" />
@@ -290,40 +290,40 @@ function ProductionPageContent() {
                                             {activeProject ? 'Proyecto Activo' : 'Colegio / Grupo'}
                                         </Badge>
                                         {activeProject?.status && (
-                                            <Badge variant="outline" className="text-slate-400 border-slate-700">
+                                            <Badge variant="outline" className="text-white/60 border-white/20">
                                                 {activeProject.status}
                                             </Badge>
                                         )}
                                     </div>
                                     <h2 className="text-3xl font-black tracking-tight">{selectedCollege}</h2>
                                     {activeProject && (
-                                        <p className="text-slate-400 font-medium">Cliente: <span className="text-white">{activeProject.projectDetails.clientName}</span></p>
+                                        <p className="text-white/70 font-medium">Cliente: <span className="text-white font-bold">{activeProject.projectDetails.clientName}</span></p>
                                     )}
                                 </div>
                                 <div className="flex flex-wrap gap-6 pt-2">
                                     <div className="space-y-1">
-                                        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Producción Directa</p>
-                                        <p className="text-xl font-bold">{filteredOrders.filter(o => o.type !== 'project_fitting').length} <span className="text-sm font-normal text-slate-500">participantes</span></p>
+                                        <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Producción Directa</p>
+                                        <p className="text-xl font-bold text-white">{filteredOrders.filter(o => o.type !== 'project_fitting').length} <span className="text-sm font-normal text-white/50">participantes</span></p>
                                     </div>
-                                    <div className="space-y-1 border-l border-slate-800 pl-6">
-                                        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Medidas registradas</p>
-                                        <p className="text-xl font-bold">{filteredOrders.filter(o => o.type === 'project_fitting').length} <span className="text-sm font-normal text-slate-500">participantes</span></p>
+                                    <div className="space-y-1 border-l border-white/10 pl-6">
+                                        <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Medidas registradas</p>
+                                        <p className="text-xl font-bold text-white">{filteredOrders.filter(o => o.type === 'project_fitting').length} <span className="text-sm font-normal text-white/50">participantes</span></p>
                                     </div>
-                                    <div className="space-y-1 border-l border-slate-800 pl-6">
-                                        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Prendas Totales</p>
-                                        <p className="text-xl font-bold text-primary">
+                                    <div className="space-y-1 border-l border-white/10 pl-6">
+                                        <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Prendas Totales</p>
+                                        <p className="text-xl font-bold text-secondary">
                                             {filteredOrders.reduce((sum, o) => sum + o.items.reduce((s, i) => s + i.quantity, 0), 0)}
                                         </p>
                                     </div>
                                 </div>
                             </div>
                             {activeProject && (
-                                <div className="bg-slate-800/50 p-6 md:w-1/3 border-l border-slate-700 space-y-4">
-                                    <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500">Acciones del Proyecto</h4>
+                                <div className="bg-white/5 p-6 md:w-1/3 border-l border-white/10 space-y-4">
+                                    <h4 className="text-xs font-bold uppercase tracking-widest text-white/50">Acciones del Proyecto</h4>
                                     <div className="grid grid-cols-1 gap-2">
                                         <Button
                                             variant="outline"
-                                            className="justify-start bg-slate-900 border-slate-700 hover:bg-slate-800 text-slate-300 h-9"
+                                            className="justify-start bg-white/10 border-white/10 hover:bg-white/20 text-white h-9"
                                             size="sm"
                                             onClick={() => window.open(`/product-sheet/${activeProject.id}`, '_blank')}
                                         >
@@ -331,7 +331,7 @@ function ProductionPageContent() {
                                         </Button>
                                         <Button
                                             variant="outline"
-                                            className="justify-start bg-slate-900 border-slate-700 hover:bg-slate-800 text-slate-300 h-9"
+                                            className="justify-start bg-white/10 border-white/10 hover:bg-white/20 text-white h-9"
                                             size="sm"
                                             onClick={() => window.open(`/materials/${activeProject.id}`, '_blank')}
                                         >
