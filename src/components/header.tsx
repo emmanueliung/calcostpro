@@ -11,7 +11,10 @@ import { ModuleMenu } from './module-menu';
 // This is now a simple server component that just structures the header.
 export function Header() {
   return (
-    <header className="sticky top-0 z-10 w-full bg-primary text-primary-foreground border-b border-white/10 no-print shadow-md">
+    <header 
+      className="sticky top-0 z-10 w-full border-b border-white/10 no-print shadow-md" 
+      style={{ backgroundColor: '#033E8C', color: 'white' }}
+    >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="flex items-center gap-2">
