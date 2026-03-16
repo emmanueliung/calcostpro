@@ -268,7 +268,7 @@ function ProductionPageContent() {
             </div>
 
             {selectedCollege !== 'all' && (
-                <Card className="bg-navy-gradient text-white overflow-hidden border-none shadow-lg">
+                <Card className="bg-primary text-white overflow-hidden border-none shadow-xl">
                     <CardContent className="p-0">
                         <div className="flex flex-col md:flex-row">
                             <div className="p-6 md:w-2/3 space-y-4">
@@ -283,7 +283,7 @@ function ProductionPageContent() {
                                             <ArrowLeft className="h-4 w-4" />
                                             <span>Volver</span>
                                         </Button>
-                                        <Badge className="bg-primary/20 text-primary border-primary/30 hover:bg-primary/30">
+                                        <Badge className="bg-secondary text-secondary-foreground border-none">
                                             {activeProject ? 'Proyecto Activo' : 'Colegio / Grupo'}
                                         </Badge>
                                         {activeProject?.status && (
