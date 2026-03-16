@@ -268,7 +268,10 @@ function ProductionPageContent() {
             </div>
 
             {selectedCollege !== 'all' && (
-                <Card className="bg-primary text-white overflow-hidden border-none shadow-xl">
+                <Card 
+                    className="text-white overflow-hidden border-none shadow-xl"
+                    style={{ backgroundColor: '#033E8C' }}
+                >
                     <CardContent className="p-0">
                         <div className="flex flex-col md:flex-row">
                             <div className="p-6 md:w-2/3 space-y-4">
