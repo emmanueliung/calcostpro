@@ -192,6 +192,7 @@ export function ClientUnifiedView({
                             <ScrollArea className="max-h-[800px]">
                                 <Table>
                                     <TableHeader>
+                                        <TableRow>
                                             <TableHead className="font-semibold">Participante</TableHead>
                                             {allGarmentNames.map(g => (
                                                 <TableHead key={g} className="text-center">
@@ -201,13 +202,13 @@ export function ClientUnifiedView({
                                                     </span>
                                                 </TableHead>
                                             ))}
-                                            <TableHead className="text-center font-semibold">Tallas</TableHead>
+                                        </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {participants.map((p) => {
-                                            const hasSizes = Object.keys(p.sizes || {}).length > 0;
-                                            const completedCount = allGarmentNames.filter(g => p.sizes?.[g]).length;
-                                            const isComplete = allGarmentNames.length > 0 && completedCount === allGarmentNames.length;
+                                            const studentOrder = orders.find(o => o.studentName.toLowerCase() === p.name.toLowerCase());
+                                            const isComplete = allGarmentNames.length > 0 && allGarmentNames.every(g => p.sizes?.[g]);
+
                                             return (
                                                 <TableRow key={p.id} className="hover:bg-slate-50/50">
                                                     <TableCell>
@@ -221,28 +222,28 @@ export function ClientUnifiedView({
                                                             </div>
                                                         </div>
                                                     </TableCell>
-                                                    {allGarmentNames.map(g => (
-                                                        <TableCell key={g} className="text-center">
-                                                            {p.sizes?.[g] ? (
-                                                                <Badge variant="secondary" className="text-xs font-bold">
-                                                                    {p.sizes[g]}
-                                                                </Badge>
-                                                            ) : (
-                                                                <span className="text-muted-foreground/40 text-xs">—</span>
-                                                            )}
-                                                        </TableCell>
-                                                    ))}
-                                                    <TableCell className="text-center">
-                                                        {allGarmentNames.length === 0 ? (
-                                                            <span className="text-xs text-muted-foreground">—</span>
-                                                        ) : isComplete ? (
-                                                            <CheckCircle2 className="h-4 w-4 text-green-500 mx-auto" />
-                                                        ) : (
-                                                            <span className="text-xs text-amber-600 font-medium">
-                                                                {completedCount}/{allGarmentNames.length}
-                                                            </span>
-                                                        )}
-                                                    </TableCell>
+                                                    {allGarmentNames.map(g => {
+                                                        const size = p.sizes?.[g];
+                                                        const orderItem = studentOrder?.items.find(i => i.productName.toLowerCase() === g.toLowerCase());
+                                                        const qty = orderItem?.quantity || 1;
+
+                                                        return (
+                                                            <TableCell key={g} className="text-center">
+                                                                {size ? (
+                                                                    <Badge variant="secondary" className="text-xs font-bold gap-1">
+                                                                        {size}
+                                                                        {qty > 1 && (
+                                                                            <span className="text-[10px] text-primary bg-primary/10 px-1 rounded">
+                                                                                ({qty})
+                                                                            </span>
+                                                                        )}
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <span className="text-muted-foreground/40 text-xs">—</span>
+                                                                )}
+                                                            </TableCell>
+                                                        );
+                                                    })}
                                                 </TableRow>
                                             );
                                         })}
