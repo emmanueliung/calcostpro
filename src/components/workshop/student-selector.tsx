@@ -520,7 +520,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
             </div>
 
             <ScrollArea className="flex-1 border rounded-md">
-                <div className="p-2 space-y-4">
+                <div className="p-2 pr-4 space-y-4">
                     {filteredStudents.length === 0 ? (
                         <p className="text-sm text-center text-muted-foreground py-4">
                             {sourceType === 'project' && selectedProjectFilter === 'all'
@@ -550,7 +550,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                             <div
                                                 key={student.id}
                                                 onClick={() => onSelectStudent(student)}
-                                                className={`group p-2.5 rounded-lg border cursor-pointer transition-colors flex items-center justify-between gap-3 ${selectedStudentId === student.id
+                                                className={`group pl-3 pr-2 py-2.5 rounded-lg border cursor-pointer transition-colors flex items-center justify-between gap-3 ${selectedStudentId === student.id
                                                     ? 'bg-primary/10 border-primary shadow-sm'
                                                     : 'hover:bg-muted bg-card'
                                                     }`}
@@ -572,7 +572,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex gap-1 shrink-0">
+                                                <div className="flex gap-1.5 shrink-0">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
