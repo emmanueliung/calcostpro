@@ -125,7 +125,7 @@ export function ClientUnifiedView({
         )).sort();
 
     return (
-        <Tabs defaultValue="produccion" className="w-full">
+        <Tabs defaultValue="participantes" className="w-full">
             <TabsList className="bg-white border p-1 h-auto mb-6">
                 <TabsTrigger
                     value="participantes"
@@ -135,16 +135,6 @@ export function ClientUnifiedView({
                     Participantes
                     <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
                         {participants.length}
-                    </span>
-                </TabsTrigger>
-                <TabsTrigger
-                    value="produccion"
-                    className="py-2 px-5 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white group"
-                >
-                    <ClipboardList className="h-4 w-4" />
-                    Producción
-                    <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
-                        {orders.length}
                     </span>
                 </TabsTrigger>
                 <TabsTrigger
@@ -262,127 +252,6 @@ export function ClientUnifiedView({
                 </Card>
             </TabsContent>
 
-            {/* ─── TAB 2: PRODUCCIÓN ─── */}
-            <TabsContent value="produccion" className="mt-0">
-                <Card className="border-none shadow-none bg-transparent">
-                    <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
-                        <CardTitle className="text-xl">Tablero de Producción</CardTitle>
-                        <Badge variant="outline" className="text-sm">{orders.length} pedidos</Badge>
-                    </CardHeader>
-                    <CardContent className="px-0">
-                        <div className="rounded-md border bg-white overflow-hidden">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Fecha</TableHead>
-                                        <TableHead>Participante / Cliente</TableHead>
-                                        <TableHead>Items</TableHead>
-                                        <TableHead>Total / Saldo</TableHead>
-                                        <TableHead>Estado</TableHead>
-                                        <TableHead>Estado de Pago</TableHead>
-                                        <TableHead className="w-[100px] text-right">Acciones</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {orders.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
-                                                No hay pedidos registrados para este cliente
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        orders.map((order) => {
-                                            const isPaid = order.balance <= 0;
-                                            return (
-                                                <TableRow key={order.id}>
-                                                    <TableCell className="text-xs text-muted-foreground">
-                                                        {format(order.createdAt, 'dd MMM HH:mm', { locale: es })}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="font-medium">{order.studentName}</div>
-                                                        <div className="text-xs text-muted-foreground">{order.college}</div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex flex-col gap-1">
-                                                            {Object.entries(
-                                                                order.items.reduce((acc, item) => {
-                                                                    acc[item.productName] = (acc[item.productName] || 0) + item.quantity;
-                                                                    return acc;
-                                                                }, {} as Record<string, number>)
-                                                            ).map(([name, qty], idx) => (
-                                                                <span key={idx} className="text-xs bg-slate-100 px-2 py-0.5 rounded-full w-fit">
-                                                                    {name} ({qty})
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="text-sm font-medium">{order.totalAmount} Bs</div>
-                                                        {order.balance > 0 && (
-                                                            <div className="text-xs text-red-500 font-bold">Deben: {order.balance} Bs</div>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Select
-                                                            defaultValue={order.status}
-                                                            onValueChange={(val) => onStatusChange(order.id, val as OrderStatus)}
-                                                        >
-                                                            <SelectTrigger className="w-[140px] h-8 text-xs">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="pending">Pendiente</SelectItem>
-                                                                <SelectItem value="in_production">En Producción</SelectItem>
-                                                                <SelectItem value="ready">Listo</SelectItem>
-                                                                <SelectItem value="delivered">Entregado</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={isPaid ? 'default' : 'destructive'} className={isPaid ? 'bg-green-600 hover:bg-green-700' : ''}>
-                                                            {isPaid ? 'Pagado' : 'Pendiente'}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <div className="flex justify-end gap-1">
-                                                            {!isPaid && (
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    className="h-8 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
-                                                                    onClick={() => onPaymentClick(order)}
-                                                                >
-                                                                    <DollarSign className="w-4 h-4 mr-1" /> Cobrar
-                                                                </Button>
-                                                            )}
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                                                                onClick={() => onEditAmountClick(order)}
-                                                            >
-                                                                <Pencil className="w-4 h-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="w-8 h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                                                onClick={() => onDeleteOrder(order.id)}
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </Button>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </CardContent>
-                </Card>
-            </TabsContent>
 
             {/* ─── TAB 3: COBROS ─── */}
             <TabsContent value="cobros" className="mt-0">

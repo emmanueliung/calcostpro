@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader } from '@/components/ui/loader';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Trash2, DollarSign, ShoppingBag, ClipboardList, Search, ArrowRight, ArrowLeft, Image as ImageIcon, FileText, Pencil, Printer, Scissors } from 'lucide-react';
+import { Trash2, DollarSign, ShoppingBag, ClipboardList, Search, ArrowRight, ArrowLeft, Image as ImageIcon, FileText, Pencil, Printer, Scissors, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,6 +42,8 @@ function ProductionPageContent() {
     const [paymentOrder, setPaymentOrder] = useState<Order | null>(null);
     const [contentOpen, setContentOpen] = useState(false);
     const [projectConfigs, setProjectConfigs] = useState<Record<string, ProjectConfiguration>>({});
+    const [showSummary, setShowSummary] = useState(false);
+    const [filterPending, setFilterPending] = useState(false);
 
     // Read ?client= param from URL to pre-filter on load
     useEffect(() => {
@@ -243,7 +245,8 @@ function ProductionPageContent() {
     const filteredOrders = orders.filter(order => {
         const matchesCollege = selectedCollege === "all" || order.college === selectedCollege;
         const matchesSearch = order.studentName.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesCollege && matchesSearch;
+        const matchesPending = !filterPending || order.balance > 0;
+        return matchesCollege && matchesSearch && matchesPending;
     });
 
     const activeProject = Object.values(projectConfigs).find(p => p.projectDetails.projectName === selectedCollege);
@@ -278,6 +281,17 @@ function ProductionPageContent() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-8 bg-white"
                         />
+                    </div>
+                    <div className="flex bg-white rounded-md shadow-sm border p-1 h-10 items-center">
+                        <Button
+                            variant={filterPending ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => setFilterPending(!filterPending)}
+                            className="h-8 text-xs gap-1"
+                        >
+                            <CreditCard className="h-3.5 w-3.5" />
+                            {filterPending ? "Mostrando Pendientes" : "Todos los Pagos"}
+                        </Button>
                     </div>
                     <div className="w-full md:w-[250px] bg-white rounded-md shadow-sm border">
                         <Select value={selectedCollege} onValueChange={setSelectedCollege}>
@@ -365,7 +379,28 @@ function ProductionPageContent() {
                                         >
                                             <FileText className="w-4 h-4 mr-2" /> Resumen de Compra
                                         </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="justify-start bg-white/10 border-white/10 hover:bg-white/20 text-white h-9"
+                                            size="sm"
+                                            onClick={() => setShowSummary(!showSummary)}
+                                        >
+                                            <Printer className="w-4 h-4 mr-2" /> 
+                                            {showSummary ? 'Ocultar Resumen' : 'Resumen para Confección'}
+                                        </Button>
                                     </div>
+                                </div>
+                            )}
+                            {!activeProject && (
+                                <div className="bg-white/5 p-6 md:w-1/3 border-l border-white/10 flex items-center justify-center">
+                                    <Button
+                                        variant="outline"
+                                        className="bg-white/10 border-white/10 hover:bg-white/20 text-white h-12 px-6"
+                                        onClick={() => setShowSummary(!showSummary)}
+                                    >
+                                        <Printer className="w-5 h-5 mr-2" />
+                                        {showSummary ? 'Ocultar Resumen' : 'Resumen Confeccionista'}
+                                    </Button>
                                 </div>
                             )}
                         </div>
@@ -494,168 +529,153 @@ function ProductionPageContent() {
                 </div>
             )}
 
-            <Tabs defaultValue="local" className="w-full">
-                <TabsList className="bg-white border p-1 h-auto mb-6">
-                    <TabsTrigger value="local" className="py-2 px-6 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                        <ClipboardList className="h-4 w-4" />
-                        Venta Directa (Local)
-                    </TabsTrigger>
-                    <TabsTrigger value="summary" className="py-2 px-6 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                        <Printer className="h-4 w-4" />
-                        Resumen Confeccionista
-                    </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="local" className="space-y-6 p-0 mt-0">
-
-                    {selectedCollege !== 'all' ? (
-                        /* ─── FICHA UNIFICADA: se activa cuando hay un cliente seleccionado ─── */
-                        <ClientUnifiedView
-                            selectedCollege={selectedCollege}
-                            orders={filteredOrders}
-                            projectConfigs={projectConfigs}
-                            onPaymentClick={(order) => { setPaymentOrder(order); setContentOpen(true); }}
-                            onStatusChange={handleStatusChange}
-                            onDeleteOrder={handleDeleteOrder}
-                            onEditAmountClick={(order) => {
-                                setEditAmountOrder(order);
-                                setTempPaidAmount(order.paidAmount || 0);
-                                setIsEditAmountDialogOpen(true);
-                            }}
-                        />
-                    ) : (
-                        /* ─── TABLA SIMPLE: cuando se ven todos los clientes ─── */
-                        <Card className="h-full border-none shadow-none bg-transparent">
-                            <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
-                                <CardTitle className="text-xl">Tablero de Producción Local</CardTitle>
-                                <Badge variant="outline" className="text-sm">
-                                    {filteredOrders.length} pedidos encontrados
-                                </Badge>
-                            </CardHeader>
-                            <CardContent className="px-0">
-                                <div className="rounded-md border bg-white overflow-hidden">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Fecha</TableHead>
-                                                <TableHead>Participante / Cliente</TableHead>
-                                                <TableHead>Items</TableHead>
-                                                <TableHead>Total / Saldo</TableHead>
-                                                <TableHead>Estado</TableHead>
-                                                <TableHead>Estado de Pago</TableHead>
-                                                <TableHead className="w-[100px] text-right">Acciones</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredOrders.length === 0 ? (
-                                                <TableRow>
-                                                    <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
-                                                        No hay pedidos locales registrados
-                                                    </TableCell>
-                                                </TableRow>
-                                            ) : (
-                                                filteredOrders.map((order) => {
-                                                    const isPaid = order.balance <= 0;
-                                                    return (
-                                                        <TableRow key={order.id}>
-                                                            <TableCell className="text-xs text-muted-foreground">
-                                                                {format(order.createdAt, 'dd MMM HH:mm', { locale: es })}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <div className="font-medium">{order.studentName}</div>
-                                                                <div className="text-xs text-muted-foreground">{order.college}</div>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <div className="flex flex-col gap-1">
-                                                                    {Object.entries(
-                                                                        order.items.reduce((acc, item) => {
-                                                                            acc[item.productName] = (acc[item.productName] || 0) + item.quantity;
-                                                                            return acc;
-                                                                        }, {} as Record<string, number>)
-                                                                    ).map(([name, qty], idx) => (
-                                                                        <span key={idx} className="text-xs bg-slate-100 px-2 py-0.5 rounded-full w-fit">
-                                                                            {name} ({qty})
-                                                                        </span>
-                                                                    ))}
-                                                                </div>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <div className="text-sm font-medium">{order.totalAmount} Bs</div>
-                                                                {order.balance > 0 && (
-                                                                    <div className="text-xs text-red-500 font-bold">Deben: {order.balance} Bs</div>
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Select
-                                                                    defaultValue={order.status}
-                                                                    onValueChange={(val) => handleStatusChange(order.id, val as OrderStatus)}
-                                                                >
-                                                                    <SelectTrigger className="w-[140px] h-8 text-xs">
-                                                                        <SelectValue />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectItem value="pending">Pendiente</SelectItem>
-                                                                        <SelectItem value="in_production">En Producción</SelectItem>
-                                                                        <SelectItem value="ready">Listo</SelectItem>
-                                                                        <SelectItem value="delivered">Entregado</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge variant={isPaid ? 'default' : 'destructive'} className={isPaid ? 'bg-green-600 hover:bg-green-700' : ''}>
-                                                                    {isPaid ? 'Pagado' : 'Pendiente'}
-                                                                </Badge>
-                                                            </TableCell>
-                                                            <TableCell className="text-right">
-                                                                <div className="flex justify-end gap-1">
-                                                                    {!isPaid && (
-                                                                        <Button
-                                                                            size="sm"
-                                                                            variant="outline"
-                                                                            className="h-8 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
-                                                                            onClick={() => { setPaymentOrder(order); setContentOpen(true); }}
-                                                                        >
-                                                                            <DollarSign className="w-4 h-4 mr-1" /> Cobrar
-                                                                        </Button>
-                                                                    )}
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                                                                        onClick={() => { setEditAmountOrder(order); setTempPaidAmount(order.paidAmount || 0); setIsEditAmountDialogOpen(true); }}
-                                                                    >
-                                                                        <Pencil className="w-4 h-4" />
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="w-8 h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                                                        onClick={() => handleDeleteOrder(order.id)}
-                                                                    >
-                                                                        <Trash2 className="w-4 h-4" />
-                                                                    </Button>
-                                                                </div>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    );
-                                                })
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-                </TabsContent>
-
-
-                <TabsContent value="summary" className="space-y-6 p-0 mt-0">
+            {showSummary && selectedCollege !== 'all' && (
+                <div className="animate-in fade-in slide-in-from-top-4 duration-500">
                     <ProductionSummary
                         orders={filteredOrders}
                         collegeName={selectedCollege}
                     />
-                </TabsContent>
-            </Tabs>
+                </div>
+            )}
+
+            {selectedCollege !== 'all' ? (
+                /* ─── FICHA UNIFICADA: se activa cuando hay un cliente seleccionado ─── */
+                <ClientUnifiedView
+                    selectedCollege={selectedCollege}
+                    orders={filteredOrders}
+                    projectConfigs={projectConfigs}
+                    onPaymentClick={(order) => { setPaymentOrder(order); setContentOpen(true); }}
+                    onStatusChange={handleStatusChange}
+                    onDeleteOrder={handleDeleteOrder}
+                    onEditAmountClick={(order) => {
+                        setEditAmountOrder(order);
+                        setTempPaidAmount(order.paidAmount || 0);
+                        setIsEditAmountDialogOpen(true);
+                    }}
+                />
+            ) : (
+                /* ─── TABLA SIMPLE: cuando se ven todos los clientes ─── */
+                <Card className="h-full border-none shadow-none bg-transparent">
+                    <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
+                        <CardTitle className="text-xl">Tablero de Producción Local</CardTitle>
+                        <Badge variant="outline" className="text-sm">
+                            {filteredOrders.length} pedidos encontrados
+                        </Badge>
+                    </CardHeader>
+                    <CardContent className="px-0">
+                        <div className="rounded-md border bg-white overflow-hidden">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Fecha</TableHead>
+                                        <TableHead>Participante / Cliente</TableHead>
+                                        <TableHead>Items</TableHead>
+                                        <TableHead>Total / Saldo</TableHead>
+                                        <TableHead>Estado</TableHead>
+                                        <TableHead>Estado de Pago</TableHead>
+                                        <TableHead className="w-[100px] text-right">Acciones</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredOrders.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+                                                No hay pedidos locales registrados
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        filteredOrders.map((order) => {
+                                            const isPaid = order.balance <= 0;
+                                            return (
+                                                <TableRow key={order.id}>
+                                                    <TableCell className="text-xs text-muted-foreground">
+                                                        {format(order.createdAt, 'dd MMM HH:mm', { locale: es })}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="font-medium">{order.studentName}</div>
+                                                        <div className="text-xs text-muted-foreground">{order.college}</div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-col gap-1">
+                                                            {Object.entries(
+                                                                order.items.reduce((acc, item) => {
+                                                                    acc[item.productName] = (acc[item.productName] || 0) + item.quantity;
+                                                                    return acc;
+                                                                }, {} as Record<string, number>)
+                                                            ).map(([name, qty], idx) => (
+                                                                <span key={idx} className="text-xs bg-slate-100 px-2 py-0.5 rounded-full w-fit">
+                                                                    {name} ({qty})
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="text-sm font-medium">{order.totalAmount} Bs</div>
+                                                        {order.balance > 0 && (
+                                                            <div className="text-xs text-red-500 font-bold">Deben: {order.balance} Bs</div>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Select
+                                                            defaultValue={order.status}
+                                                            onValueChange={(val) => handleStatusChange(order.id, val as OrderStatus)}
+                                                        >
+                                                            <SelectTrigger className="w-[140px] h-8 text-xs">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="pending">Pendiente</SelectItem>
+                                                                <SelectItem value="in_production">En Producción</SelectItem>
+                                                                <SelectItem value="ready">Listo</SelectItem>
+                                                                <SelectItem value="delivered">Entregado</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={isPaid ? 'default' : 'destructive'} className={isPaid ? 'bg-green-600 hover:bg-green-700' : ''}>
+                                                            {isPaid ? 'Pagado' : 'Pendiente'}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex justify-end gap-1">
+                                                            {!isPaid && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className="h-8 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
+                                                                    onClick={() => { setPaymentOrder(order); setContentOpen(true); }}
+                                                                >
+                                                                    <DollarSign className="w-4 h-4 mr-1" /> Cobrar
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                                                onClick={() => { setEditAmountOrder(order); setTempPaidAmount(order.paidAmount || 0); setIsEditAmountDialogOpen(true); }}
+                                                            >
+                                                                <Pencil className="w-4 h-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="w-8 h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                                onClick={() => handleDeleteOrder(order.id)}
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             <Dialog open={contentOpen} onOpenChange={setContentOpen}>
                 <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
