@@ -500,11 +500,6 @@ function ProductionPageContent() {
                         <ClipboardList className="h-4 w-4" />
                         Venta Directa (Local)
                     </TabsTrigger>
-                    <TabsTrigger value="online" className="py-2 px-6 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                        <ShoppingBag className="h-4 w-4" />
-                        Tienda Online
-                        <OnlineOrdersBadge />
-                    </TabsTrigger>
                     <TabsTrigger value="summary" className="py-2 px-6 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
                         <Printer className="h-4 w-4" />
                         Resumen Confeccionista
@@ -512,25 +507,6 @@ function ProductionPageContent() {
                 </TabsList>
 
                 <TabsContent value="local" className="space-y-6 p-0 mt-0">
-                    {publicOrders.filter(o => o.status === 'pending_payment').length > 0 && (
-                        <Alert className="bg-blue-50 border-blue-200 mb-4 animate-in fade-in slide-in-from-top-2">
-                            <ShoppingBag className="h-4 w-4 text-blue-600" />
-                            <AlertTitle className="text-blue-800 font-bold">Tienes pedidos online pendientes</AlertTitle>
-                            <AlertDescription className="text-blue-700 flex justify-between items-center">
-                                Hay {publicOrders.filter(o => o.status === 'pending_payment').length} pedidos esperando validación de pago.
-                                <Button
-                                    variant="link"
-                                    className="text-blue-800 font-bold p-0 h-auto"
-                                    onClick={() => {
-                                        const onlineTab = document.querySelector('[value="online"]') as HTMLElement;
-                                        if (onlineTab) onlineTab.click();
-                                    }}
-                                >
-                                    Ver Tienda Online <ArrowRight className="ml-1 h-3 w-3" />
-                                </Button>
-                            </AlertDescription>
-                        </Alert>
-                    )}
 
                     {selectedCollege !== 'all' ? (
                         /* ─── FICHA UNIFICADA: se activa cuando hay un cliente seleccionado ─── */
@@ -672,9 +648,6 @@ function ProductionPageContent() {
                     )}
                 </TabsContent>
 
-                <TabsContent value="online" className="p-0 mt-0">
-                    <OnlineOrdersView />
-                </TabsContent>
 
                 <TabsContent value="summary" className="space-y-6 p-0 mt-0">
                     <ProductionSummary
