@@ -666,18 +666,18 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                             <div
                                                 key={student.id}
                                                 onClick={() => onSelectStudent(student)}
-                                                className={`group pl-3 pr-4 py-2.5 rounded-lg border cursor-pointer transition-colors flex items-center justify-between gap-3 ${selectedStudentId === student.id
+                                                className={`group pl-2.5 pr-1 py-1.5 rounded-lg border cursor-pointer transition-colors flex items-center gap-2 ${selectedStudentId === student.id
                                                     ? 'bg-primary/10 border-primary shadow-sm'
                                                     : 'hover:bg-muted bg-card'
                                                     }`}
                                             >
-                                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                                                     <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${selectedStudentId === student.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                                                         }`}>
                                                         <UserIcon className="h-3.5 w-3.5" />
                                                     </div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-2">
+                                                    <div className="min-w-0 flex-1 overflow-hidden">
+                                                        <div className="flex items-center gap-1.5">
                                                             <p className="font-medium text-sm truncate leading-tight">{student.name}</p>
                                                             <Badge variant="outline" className={`text-[9px] px-1 py-0 h-3.5 shrink-0 ${student.gender === 'Mujer' ? 'border-pink-200 text-pink-600 bg-pink-50' : 'border-blue-200 text-blue-600 bg-blue-50'}`}>
                                                                 {student.gender === 'Mujer' ? 'M' : 'H'}
@@ -688,11 +688,11 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex gap-1 shrink-0 ml-auto bg-transparent z-10">
+                                                <div className="flex shrink-0 items-center">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-7 w-7 transition-colors hover:text-primary"
+                                                        className="h-8 w-8 transition-colors hover:text-primary"
                                                         onClick={(e) => handleEditClick(e, student)}
                                                     >
                                                         <Edit className="h-4 w-4" />
@@ -700,7 +700,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-7 w-7 transition-colors text-destructive hover:bg-destructive/10"
+                                                        className="h-8 w-8 transition-colors text-destructive hover:bg-destructive/10"
                                                         onClick={(e) => handleDeleteStudent(e, student.id)}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
