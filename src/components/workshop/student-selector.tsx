@@ -633,10 +633,8 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                         </DialogFooter>
                     </DialogContent >
                 </Dialog >
-            </div>
-
             <ScrollArea className="flex-1 border rounded-md">
-                <div className="p-2 pr-6 space-y-4">
+                <div className="p-2 pr-10 space-y-4">
                     {filteredStudents.length === 0 ? (
                         <p className="text-sm text-center text-muted-foreground py-4">
                             {sourceType === 'project' && selectedProjectFilter === 'all'
@@ -648,7 +646,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                             filteredStudents.reduce((acc, student) => {
                                 const group = sourceType === 'school'
                                     ? (student.classroom ? `${student.college} (${student.classroom})` : student.college)
-                                    : student.college; // For projects, just group by project name (should be single group mostly)
+                                    : student.college;
                                 if (!acc[group]) acc[group] = [];
                                 acc[group].push(student);
                                 return acc;
@@ -666,7 +664,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                             <div
                                                 key={student.id}
                                                 onClick={() => onSelectStudent(student)}
-                                                className={`group pl-2.5 pr-1 py-1.5 rounded-lg border cursor-pointer transition-colors flex items-center gap-2 ${selectedStudentId === student.id
+                                                className={`group px-2 py-1.5 rounded-lg border cursor-pointer transition-colors flex items-center gap-1.5 ${selectedStudentId === student.id
                                                     ? 'bg-primary/10 border-primary shadow-sm'
                                                     : 'hover:bg-muted bg-card'
                                                     }`}
@@ -677,8 +675,8 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                                         <UserIcon className="h-3.5 w-3.5" />
                                                     </div>
                                                     <div className="min-w-0 flex-1 overflow-hidden">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <p className="font-medium text-sm truncate leading-tight">{student.name}</p>
+                                                        <div className="flex items-center gap-1">
+                                                            <p className="font-medium text-sm truncate leading-tight grow">{student.name}</p>
                                                             <Badge variant="outline" className={`text-[9px] px-1 py-0 h-3.5 shrink-0 ${student.gender === 'Mujer' ? 'border-pink-200 text-pink-600 bg-pink-50' : 'border-blue-200 text-blue-600 bg-blue-50'}`}>
                                                                 {student.gender === 'Mujer' ? 'M' : 'H'}
                                                             </Badge>
@@ -688,22 +686,22 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex shrink-0 items-center">
+                                                <div className="flex shrink-0 items-center gap-0">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 transition-colors hover:text-primary"
+                                                        className="h-7 w-7 transition-colors hover:text-primary"
                                                         onClick={(e) => handleEditClick(e, student)}
                                                     >
-                                                        <Edit className="h-4 w-4" />
+                                                        <Edit className="h-3.5 w-3.5" />
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 transition-colors text-destructive hover:bg-destructive/10"
+                                                        className="h-7 w-7 transition-colors text-destructive hover:bg-destructive/10"
                                                         onClick={(e) => handleDeleteStudent(e, student.id)}
                                                     >
-                                                        <Trash2 className="h-4 w-4" />
+                                                        <Trash2 className="h-3.5 w-3.5" />
                                                     </Button>
                                                 </div>
                                             </div>
@@ -714,7 +712,6 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                     )}
                 </div>
             </ScrollArea>
-
-        </div >
+        </div>
     );
 }
