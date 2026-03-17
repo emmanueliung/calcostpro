@@ -677,8 +677,8 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                                         <UserIcon className="h-3.5 w-3.5" />
                                                     </div>
                                                     <div className="min-w-0 flex-1 overflow-hidden">
-                                                        <div className="flex items-center gap-1">
-                                                            <p className="font-medium text-sm truncate leading-tight grow">{student.name}</p>
+                                                        <div className="flex items-center gap-1 min-w-0 flex-1">
+                                                            <p className="font-medium text-sm truncate leading-tight min-w-0 flex-1">{student.name}</p>
                                                             <Badge variant="outline" className={`text-[9px] px-1 py-0 h-3.5 shrink-0 ${student.gender === 'Mujer' ? 'border-pink-200 text-pink-600 bg-pink-50' : 'border-blue-200 text-blue-600 bg-blue-50'}`}>
                                                                 {student.gender === 'Mujer' ? 'M' : 'H'}
                                                             </Badge>
@@ -688,7 +688,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex shrink-0 items-center gap-0">
+                                                <div className="flex shrink-0 items-center gap-0 ml-auto">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
