@@ -349,16 +349,6 @@ function ProductionPageContent() {
                                         <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Total Participantes</p>
                                         <p className="text-xl font-bold text-white">{participantsCount} <span className="text-sm font-normal text-white/50">registrados</span></p>
                                     </div>
-                                    <div className="space-y-1 border-l border-white/10 pl-6">
-                                        <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Pedidos Directos</p>
-                                        <p className="text-xl font-bold text-white">{filteredOrders.filter(o => o.type !== 'project_fitting').length} <span className="text-sm font-normal text-white/50">confirmados</span></p>
-                                    </div>
-                                    <div className="space-y-1 border-l border-white/10 pl-6">
-                                        <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Prendas Totales</p>
-                                        <p className="text-xl font-bold text-secondary">
-                                            {filteredOrders.reduce((sum, o) => sum + o.items.reduce((s, i) => s + i.quantity, 0), 0)}
-                                        </p>
-                                    </div>
                                 </div>
                             </div>
                             {activeProject && (
