@@ -509,18 +509,134 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 )}
             </div>
 
-            <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Buscar por nombre o cliente..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            <div className="flex flex-col gap-2">
+                <div className="relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Buscar por nombre o cliente..."
+                        className="pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+
+                <Dialog open={isCreateOpen} onOpenChange={(open) => {
+                    setIsCreateOpen(open);
+                    if (!open) resetForm();
+                }}>
+                    <DialogTrigger asChild>
+                        <Button className="w-full flex items-center justify-center gap-2" variant="outline" onClick={() => {
+                            setEditingStudent(null);
+                            resetForm();
+                        }}>
+                            <UserPlus className="h-4 w-4" />
+                            {sourceType === 'school' ? 'Nuevo Estudiante' : 'Nuevo Participante'}
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>
+                                {editingStudent ? 'Editar Registro' : (sourceType === 'school' ? 'Registrar Nuevo Estudiante' : 'Registrar Nuevo Participante')}
+                            </DialogTitle>
+                        </DialogHeader>
+
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Nombre Completo *</Label>
+                                    <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ej: Juan Pérez" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>{sourceType === 'school' ? 'Colegio *' : 'Proyecto *'}</Label>
+                                    {availableColleges.length > 0 ? (
+                                        <Select value={newCollege} onValueChange={setNewCollege} disabled={sourceType === 'project'}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder={sourceType === 'school' ? "Seleccionar Colegio" : "Proyecto del participante"} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {availableColleges.map(c => (
+                                                    <SelectItem key={c.id} value={c.id}>
+                                                        {c.name} {c.course ? `(${c.course})` : ''}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    ) : (
+                                        <div className="flex flex-col gap-1">
+                                            <Input value={newCollege} onChange={(e) => setNewCollege(e.target.value)} placeholder="Ej: Don Bosco" />
+                                            <p className="text-xs text-red-500">No hay colegios configurados.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Género *</Label>
+                                    <Select value={newGender} onValueChange={(val: any) => setNewGender(val)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccionar Género" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Hombre">Hombre</SelectItem>
+                                            <SelectItem value="Mujer">Mujer</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Notas / Observaciones</Label>
+                                    <Textarea
+                                        value={newNotes}
+                                        onChange={(e) => setNewNotes(e.target.value)}
+                                        placeholder="Información adicional..."
+                                        className="resize-none h-10"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="border-t pt-4 mt-2">
+                                <h4 className="font-medium mb-4">
+                                    Tallas por Prenda
+                                    {selectedCollegeConfig && <span className="text-sm font-normal text-muted-foreground ml-2">({selectedCollegeConfig.name})</span>}
+                                </h4>
+
+                                {!newCollege ? (
+                                    <p className="text-sm text-muted-foreground italic bg-slate-100 p-3 rounded-md">
+                                        👈 {sourceType === 'school' ? 'Primero selecciona un colegio pour ver sus prendas.' : 'Primero selecciona un proyecto para ver sus prendas.'}
+                                    </p>
+                                ) : garmentsToShow.length === 0 ? (
+                                    <p className="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-md">
+                                        Este colegio no tiene prendas configuradas. Ve a <strong>Configuración</strong> para añadirlas.
+                                    </p>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {garmentsToShow.map((garment) => (
+                                            <div key={garment} className="flex items-center gap-3">
+                                                <Label className="w-24 text-sm truncate" title={garment}>{garment}</Label>
+                                                <Input
+                                                    placeholder="Talla"
+                                                    value={sizes[garment] || ''}
+                                                    onChange={(e) => setSizes({ ...sizes, [garment]: e.target.value.toUpperCase() })}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+                            <Button onClick={handleSaveStudent} disabled={isCreating}>
+                                {isCreating ? 'Guardando...' : (editingStudent ? 'Actualizar' : 'Guardar y Seleccionar')}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent >
+                </Dialog >
             </div>
 
             <ScrollArea className="flex-1 border rounded-md">
-                <div className="p-2 pr-4 space-y-4">
+                <div className="p-2 pr-6 space-y-4">
                     {filteredStudents.length === 0 ? (
                         <p className="text-sm text-center text-muted-foreground py-4">
                             {sourceType === 'project' && selectedProjectFilter === 'all'
@@ -550,7 +666,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                             <div
                                                 key={student.id}
                                                 onClick={() => onSelectStudent(student)}
-                                                className={`group pl-3 pr-2 py-2.5 rounded-lg border cursor-pointer transition-colors flex items-center justify-between gap-3 ${selectedStudentId === student.id
+                                                className={`group pl-3 pr-4 py-2.5 rounded-lg border cursor-pointer transition-colors flex items-center justify-between gap-3 ${selectedStudentId === student.id
                                                     ? 'bg-primary/10 border-primary shadow-sm'
                                                     : 'hover:bg-muted bg-card'
                                                     }`}
@@ -572,7 +688,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex gap-1.5 shrink-0">
+                                                <div className="flex gap-1.5 shrink-0 mr-1">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
@@ -599,119 +715,6 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                 </div>
             </ScrollArea>
 
-            <Dialog open={isCreateOpen} onOpenChange={(open) => {
-                setIsCreateOpen(open);
-                if (!open) resetForm();
-            }}>
-                <DialogTrigger asChild>
-                    <Button className="w-full" variant="outline" onClick={() => {
-                        setEditingStudent(null);
-                        resetForm();
-                    }}>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        {sourceType === 'school' ? 'Nuevo Estudiante' : 'Nuevo Participante'}
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {editingStudent ? 'Editar Registro' : (sourceType === 'school' ? 'Registrar Nuevo Estudiante' : 'Registrar Nuevo Participante')}
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Nombre Completo *</Label>
-                                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ej: Juan Pérez" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>{sourceType === 'school' ? 'Colegio *' : 'Proyecto *'}</Label>
-                                {availableColleges.length > 0 ? (
-                                    <Select value={newCollege} onValueChange={setNewCollege} disabled={sourceType === 'project'}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder={sourceType === 'school' ? "Seleccionar Colegio" : "Proyecto del participante"} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {availableColleges.map(c => (
-                                                <SelectItem key={c.id} value={c.id}>
-                                                    {c.name} {c.course ? `(${c.course})` : ''}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                ) : (
-                                    <div className="flex flex-col gap-1">
-                                        <Input value={newCollege} onChange={(e) => setNewCollege(e.target.value)} placeholder="Ej: Don Bosco" />
-                                        <p className="text-xs text-red-500">No hay colegios configurados.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Género *</Label>
-                                <Select value={newGender} onValueChange={(val: any) => setNewGender(val)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Seleccionar Género" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Hombre">Hombre</SelectItem>
-                                        <SelectItem value="Mujer">Mujer</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Notas / Observaciones</Label>
-                                <Textarea
-                                    value={newNotes}
-                                    onChange={(e) => setNewNotes(e.target.value)}
-                                    placeholder="Información adicional..."
-                                    className="resize-none h-10"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="border-t pt-4 mt-2">
-                            <h4 className="font-medium mb-4">
-                                Tallas por Prenda
-                                {selectedCollegeConfig && <span className="text-sm font-normal text-muted-foreground ml-2">({selectedCollegeConfig.name})</span>}
-                            </h4>
-
-                            {!newCollege ? (
-                                <p className="text-sm text-muted-foreground italic bg-slate-100 p-3 rounded-md">
-                                    👈 {sourceType === 'school' ? 'Primero selecciona un colegio pour ver sus prendas.' : 'Primero selecciona un proyecto para ver sus prendas.'}
-                                </p>
-                            ) : garmentsToShow.length === 0 ? (
-                                <p className="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-md">
-                                    Este colegio no tiene prendas configuradas. Ve a <strong>Configuración</strong> para añadirlas.
-                                </p>
-                            ) : (
-                                <div className="grid grid-cols-2 gap-4">
-                                    {garmentsToShow.map((garment) => (
-                                        <div key={garment} className="flex items-center gap-3">
-                                            <Label className="w-24 text-sm truncate" title={garment}>{garment}</Label>
-                                            <Input
-                                                placeholder="Talla"
-                                                value={sizes[garment] || ''}
-                                                onChange={(e) => setSizes({ ...sizes, [garment]: e.target.value.toUpperCase() })}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleSaveStudent} disabled={isCreating}>
-                            {isCreating ? 'Guardando...' : (editingStudent ? 'Actualizar' : 'Guardar y Seleccionar')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent >
-            </Dialog >
         </div >
     );
 }
