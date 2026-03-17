@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { DollarSign, Users, ClipboardList, CreditCard, QrCode, Pencil, Trash2, CheckCircle2, AlertCircle, UserCheck, Shirt } from 'lucide-react';
+import { DollarSign, Users, ClipboardList, CreditCard, QrCode, Pencil, Trash2, CheckCircle2, AlertCircle, UserCheck, Shirt, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -260,29 +260,6 @@ export function ClientUnifiedView({
                     {/* Left: Summary + List of pending */}
                     <div className="lg:col-span-2 space-y-4">
                         {/* Summary cards */}
-                        <div className="grid grid-cols-3 gap-3">
-                            <Card className="bg-slate-50 border">
-                                <CardContent className="p-4">
-                                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">Venta Total</p>
-                                    <p className="text-2xl font-bold">{totalVenta.toLocaleString()}</p>
-                                    <p className="text-xs text-muted-foreground">Bs</p>
-                                </CardContent>
-                            </Card>
-                            <Card className="bg-green-50 border-green-100">
-                                <CardContent className="p-4">
-                                    <p className="text-[10px] uppercase tracking-widest text-green-600 font-bold mb-1">Cobrado</p>
-                                    <p className="text-2xl font-bold text-green-700">{totalCobrado.toLocaleString()}</p>
-                                    <p className="text-xs text-green-600">Bs · {paidOrders.length} pagados</p>
-                                </CardContent>
-                            </Card>
-                            <Card className={totalPendiente > 0 ? "bg-red-50 border-red-100" : "bg-green-50 border-green-100"}>
-                                <CardContent className="p-4">
-                                    <p className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${totalPendiente > 0 ? 'text-red-600' : 'text-green-600'}`}>Saldo Pendiente</p>
-                                    <p className={`text-2xl font-bold ${totalPendiente > 0 ? 'text-red-700' : 'text-green-700'}`}>{totalPendiente.toLocaleString()}</p>
-                                    <p className={`text-xs ${totalPendiente > 0 ? 'text-red-500' : 'text-green-500'}`}>Bs · {pendingOrders.length} pendientes</p>
-                                </CardContent>
-                            </Card>
-                        </div>
 
                         {/* Pending payments list */}
                         {pendingOrders.length === 0 ? (
@@ -343,44 +320,27 @@ export function ClientUnifiedView({
 
                     {/* Right: QR Panel */}
                     <div className="space-y-4">
-                        <Card className="border shadow-sm">
-                            <CardHeader className="pb-3 border-b">
-                                <CardTitle className="text-base flex items-center gap-2">
-                                    <QrCode className="h-4 w-4 text-primary" />
-                                    QR de Cobro
+                        <Card className="border shadow-sm bg-primary/5 border-primary/20">
+                            <CardHeader className="pb-3 border-b border-primary/10">
+                                <CardTitle className="text-base flex items-center gap-2 text-primary">
+                                    <QrCode className="h-4 w-4" />
+                                    Página de Cobro Público
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="pt-4 space-y-3">
-                                {savedQrCode ? (
-                                    <>
-                                        <div className="flex justify-center bg-white p-3 border rounded-lg">
-                                            <img src={savedQrCode} alt="QR Bancario" className="h-44 w-44 object-contain" />
-                                        </div>
-                                        <p className="text-xs text-center text-muted-foreground">
-                                            Muestra este QR al cliente para que realice el pago bancario.
-                                        </p>
-                                        {totalPendiente > 0 && (
-                                            <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-center">
-                                                <p className="text-xs text-amber-700 font-medium">Monto a cobrar</p>
-                                                <p className="text-2xl font-black text-amber-800">{totalPendiente.toLocaleString()} Bs</p>
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg bg-slate-50 gap-3 text-center">
-                                        <QrCode className="h-10 w-10 text-muted-foreground/30" />
-                                        <p className="text-sm text-muted-foreground">
-                                            No has configurado tu QR de cobro.
-                                        </p>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => window.open('/workshop/settings', '_blank')}
-                                        >
-                                            Configurar QR
-                                        </Button>
-                                    </div>
-                                )}
+                            <CardContent className="pt-4 space-y-4">
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                    Envía este enlace a tus clientes pour qu'ils puissent notifier leurs paiements et télécharger leurs reçus.
+                                </p>
+                                <Button 
+                                    className="w-full gap-2 font-bold shadow-md"
+                                    onClick={() => window.open(`/order/${user?.uid}`, '_blank')}
+                                >
+                                    <Upload className="h-4 w-4" />
+                                    Abrir Página de Envío
+                                </Button>
+                                <div className="p-3 bg-white border rounded-md text-[10px] font-mono break-all text-muted-foreground">
+                                    {typeof window !== 'undefined' ? `${window.location.origin}/order/${user?.uid}` : ''}
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
