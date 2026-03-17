@@ -671,15 +671,15 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                                     : 'hover:bg-muted bg-card'
                                                     }`}
                                             >
-                                                <div className="flex items-center gap-2.5">
+                                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                                                     <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${selectedStudentId === student.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                                                         }`}>
                                                         <UserIcon className="h-3.5 w-3.5" />
                                                     </div>
-                                                    <div>
+                                                    <div className="min-w-0 flex-1">
                                                         <div className="flex items-center gap-2">
                                                             <p className="font-medium text-sm truncate leading-tight">{student.name}</p>
-                                                            <Badge variant="outline" className={`text-[9px] px-1 py-0 h-3.5 ${student.gender === 'Mujer' ? 'border-pink-200 text-pink-600 bg-pink-50' : 'border-blue-200 text-blue-600 bg-blue-50'}`}>
+                                                            <Badge variant="outline" className={`text-[9px] px-1 py-0 h-3.5 shrink-0 ${student.gender === 'Mujer' ? 'border-pink-200 text-pink-600 bg-pink-50' : 'border-blue-200 text-blue-600 bg-blue-50'}`}>
                                                                 {student.gender === 'Mujer' ? 'M' : 'H'}
                                                             </Badge>
                                                         </div>
@@ -688,22 +688,22 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex gap-1.5 shrink-0 mr-1">
+                                                <div className="flex gap-1 shrink-0 ml-auto bg-transparent z-10">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary"
+                                                        className="h-7 w-7 transition-colors hover:text-primary"
                                                         onClick={(e) => handleEditClick(e, student)}
                                                     >
-                                                        <Edit className="h-3 w-3" />
+                                                        <Edit className="h-4 w-4" />
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:bg-destructive/10"
+                                                        className="h-7 w-7 transition-colors text-destructive hover:bg-destructive/10"
                                                         onClick={(e) => handleDeleteStudent(e, student.id)}
                                                     >
-                                                        <Trash2 className="h-3 w-3" />
+                                                        <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>
                                             </div>
