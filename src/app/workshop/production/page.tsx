@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader } from '@/components/ui/loader';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Trash2, DollarSign, ShoppingBag, ClipboardList, Search, ArrowRight, ArrowLeft, Image as ImageIcon, FileText, Pencil, Printer, Scissors, CreditCard } from 'lucide-react';
+import { Trash2, DollarSign, ShoppingBag, ClipboardList, Search, ArrowRight, ArrowLeft, Image as ImageIcon, FileText, Pencil, Printer, Scissors, CreditCard, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -272,41 +272,43 @@ function ProductionPageContent() {
                         <p className="text-muted-foreground text-sm">Administra tus pedidos locales y pedidos recibidos en línea.</p>
                     </div>
                 </div>
-                <div className="flex flex-col md:flex-row gap-3">
-                    <div className="relative w-full md:w-[300px]">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Buscar participante..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-8 bg-white"
-                        />
+                {selectedCollege !== 'all' && (
+                    <div className="flex flex-col md:flex-row gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <div className="relative w-full md:w-[300px]">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar participante..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-8 bg-white"
+                            />
+                        </div>
+                        <div className="flex bg-white rounded-md shadow-sm border p-1 h-10 items-center">
+                            <Button
+                                variant={filterPending ? "default" : "ghost"}
+                                size="sm"
+                                onClick={() => setFilterPending(!filterPending)}
+                                className="h-8 text-xs gap-1"
+                            >
+                                <CreditCard className="h-3.5 w-3.5" />
+                                {filterPending ? "Mostrando Pendientes" : "Todos los Pagos"}
+                            </Button>
+                        </div>
+                        <div className="w-full md:w-[250px] bg-white rounded-md shadow-sm border">
+                            <Select value={selectedCollege} onValueChange={setSelectedCollege}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Filtrar por Cliente" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos los Clientes</SelectItem>
+                                    {uniqueColleges.map(c => (
+                                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
-                    <div className="flex bg-white rounded-md shadow-sm border p-1 h-10 items-center">
-                        <Button
-                            variant={filterPending ? "default" : "ghost"}
-                            size="sm"
-                            onClick={() => setFilterPending(!filterPending)}
-                            className="h-8 text-xs gap-1"
-                        >
-                            <CreditCard className="h-3.5 w-3.5" />
-                            {filterPending ? "Mostrando Pendientes" : "Todos los Pagos"}
-                        </Button>
-                    </div>
-                    <div className="w-full md:w-[250px] bg-white rounded-md shadow-sm border">
-                        <Select value={selectedCollege} onValueChange={setSelectedCollege}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Filtrar por Cliente" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos los Clientes</SelectItem>
-                                {uniqueColleges.map(c => (
-                                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
+                )}
             </div>
 
             {selectedCollege !== 'all' && (
@@ -467,9 +469,9 @@ function ProductionPageContent() {
 
             {selectedCollege === "all" && uniqueColleges.length > 0 && (
                 <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-bold flex items-center gap-2">
-                        <ClipboardList className="h-5 w-5 text-primary" />
-                        Seleccione un Cliente para gestionar
+                    <h3 className="text-xl font-black flex items-center gap-2 uppercase tracking-tight text-slate-800">
+                        <Users className="h-5 w-5 text-primary" />
+                        Resumen por Cliente
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {uniqueColleges.map(c => {
@@ -538,7 +540,7 @@ function ProductionPageContent() {
                 </div>
             )}
 
-            {selectedCollege !== 'all' ? (
+            {selectedCollege !== 'all' && (
                 /* ─── FICHA UNIFICADA: se activa cuando hay un cliente seleccionado ─── */
                 <ClientUnifiedView
                     selectedCollege={selectedCollege}
@@ -553,128 +555,6 @@ function ProductionPageContent() {
                         setIsEditAmountDialogOpen(true);
                     }}
                 />
-            ) : (
-                /* ─── TABLA SIMPLE: cuando se ven todos los clientes ─── */
-                <Card className="h-full border-none shadow-none bg-transparent">
-                    <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
-                        <CardTitle className="text-xl">Tablero de Producción Local</CardTitle>
-                        <Badge variant="outline" className="text-sm">
-                            {filteredOrders.length} pedidos encontrados
-                        </Badge>
-                    </CardHeader>
-                    <CardContent className="px-0">
-                        <div className="rounded-md border bg-white overflow-hidden">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Fecha</TableHead>
-                                        <TableHead>Participante / Cliente</TableHead>
-                                        <TableHead>Items</TableHead>
-                                        <TableHead>Total / Saldo</TableHead>
-                                        <TableHead>Estado</TableHead>
-                                        <TableHead>Estado de Pago</TableHead>
-                                        <TableHead className="w-[100px] text-right">Acciones</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredOrders.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
-                                                No hay pedidos locales registrados
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        filteredOrders.map((order) => {
-                                            const isPaid = order.balance <= 0;
-                                            return (
-                                                <TableRow key={order.id}>
-                                                    <TableCell className="text-xs text-muted-foreground">
-                                                        {format(order.createdAt, 'dd MMM HH:mm', { locale: es })}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="font-medium">{order.studentName}</div>
-                                                        <div className="text-xs text-muted-foreground">{order.college}</div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex flex-col gap-1">
-                                                            {Object.entries(
-                                                                order.items.reduce((acc, item) => {
-                                                                    acc[item.productName] = (acc[item.productName] || 0) + item.quantity;
-                                                                    return acc;
-                                                                }, {} as Record<string, number>)
-                                                            ).map(([name, qty], idx) => (
-                                                                <span key={idx} className="text-xs bg-slate-100 px-2 py-0.5 rounded-full w-fit">
-                                                                    {name} ({qty})
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="text-sm font-medium">{order.totalAmount} Bs</div>
-                                                        {order.balance > 0 && (
-                                                            <div className="text-xs text-red-500 font-bold">Deben: {order.balance} Bs</div>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Select
-                                                            defaultValue={order.status}
-                                                            onValueChange={(val) => handleStatusChange(order.id, val as OrderStatus)}
-                                                        >
-                                                            <SelectTrigger className="w-[140px] h-8 text-xs">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="pending">Pendiente</SelectItem>
-                                                                <SelectItem value="in_production">En Producción</SelectItem>
-                                                                <SelectItem value="ready">Listo</SelectItem>
-                                                                <SelectItem value="delivered">Entregado</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={isPaid ? 'default' : 'destructive'} className={isPaid ? 'bg-green-600 hover:bg-green-700' : ''}>
-                                                            {isPaid ? 'Pagado' : 'Pendiente'}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <div className="flex justify-end gap-1">
-                                                            {!isPaid && (
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    className="h-8 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
-                                                                    onClick={() => { setPaymentOrder(order); setContentOpen(true); }}
-                                                                >
-                                                                    <DollarSign className="w-4 h-4 mr-1" /> Cobrar
-                                                                </Button>
-                                                            )}
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                                                                onClick={() => { setEditAmountOrder(order); setTempPaidAmount(order.paidAmount || 0); setIsEditAmountDialogOpen(true); }}
-                                                            >
-                                                                <Pencil className="w-4 h-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="w-8 h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                                                onClick={() => handleDeleteOrder(order.id)}
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </Button>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </CardContent>
-                </Card>
             )}
 
             <Dialog open={contentOpen} onOpenChange={setContentOpen}>
