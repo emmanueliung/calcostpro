@@ -636,7 +636,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
             </div>
 
             <ScrollArea className="flex-1 border rounded-md">
-                <div className="p-2 pr-10 space-y-4">
+                <div className="p-2 pr-2 sm:pr-4 space-y-4 w-full">
                     {filteredStudents.length === 0 ? (
                         <p className="text-sm text-center text-muted-foreground py-4">
                             {sourceType === 'project' && selectedProjectFilter === 'all'
@@ -666,7 +666,7 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                                             <div
                                                 key={student.id}
                                                 onClick={() => onSelectStudent(student)}
-                                                className={`group px-2 py-1.5 rounded-lg border cursor-pointer transition-colors flex items-center gap-1.5 ${selectedStudentId === student.id
+                                                className={`group px-2 py-1.5 rounded-lg border cursor-pointer transition-colors flex items-center gap-1.5 w-full max-w-full overflow-hidden ${selectedStudentId === student.id
                                                     ? 'bg-primary/10 border-primary shadow-sm'
                                                     : 'hover:bg-muted bg-card'
                                                     }`}
