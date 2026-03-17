@@ -185,11 +185,11 @@ export function ClientUnifiedView({
                                 <p className="text-xs">Ve al <strong>Taller</strong> para registrar participantes.</p>
                             </div>
                         ) : (
-                            <ScrollArea className="max-h-[500px]">
+                            <ScrollArea className="max-h-[800px]">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="bg-slate-50">
                                             <TableHead className="font-semibold">Participante</TableHead>
+                                            <TableHead className="text-center">Pedido</TableHead>
                                             {allGarmentNames.map(g => (
                                                 <TableHead key={g} className="text-center">
                                                     <span className="flex items-center justify-center gap-1">
@@ -198,8 +198,7 @@ export function ClientUnifiedView({
                                                     </span>
                                                 </TableHead>
                                             ))}
-                                            <TableHead className="text-center">Tallas completas</TableHead>
-                                        </TableRow>
+                                            <TableHead className="text-center font-semibold">Tallas</TableHead>
                                     </TableHeader>
                                     <TableBody>
                                         {participants.map((p) => {
@@ -218,6 +217,17 @@ export function ClientUnifiedView({
                                                                 {p.notes && <p className="text-[10px] text-muted-foreground">{p.notes}</p>}
                                                             </div>
                                                         </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        {orders.some(o => o.studentName.toLowerCase() === p.name.toLowerCase()) ? (
+                                                            <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none text-[10px]">
+                                                                Confirmado
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge variant="outline" className="text-red-500 border-red-200 bg-red-50 animate-pulse text-[10px]">
+                                                                Falta Pedido
+                                                            </Badge>
+                                                        )}
                                                     </TableCell>
                                                     {allGarmentNames.map(g => (
                                                         <TableCell key={g} className="text-center">
