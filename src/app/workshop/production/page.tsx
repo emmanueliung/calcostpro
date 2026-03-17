@@ -55,6 +55,34 @@ function ProductionPageContent() {
     const [editAmountOrder, setEditAmountOrder] = useState<Order | null>(null);
     const [isEditAmountDialogOpen, setIsEditAmountDialogOpen] = useState(false);
     const [tempPaidAmount, setTempPaidAmount] = useState<number>(0);
+    const [participantsCount, setParticipantsCount] = useState<number>(0);
+
+    useEffect(() => {
+        if (!user || !db || selectedCollege === "all") {
+            setParticipantsCount(0);
+            return;
+        }
+
+        const activeProj = Object.values(projectConfigs).find(p => p.projectDetails.projectName === selectedCollege);
+        
+        if (activeProj) {
+            const fittingsRef = collection(db, "projects", activeProj.id, "fittings");
+            const unsub = onSnapshot(fittingsRef, (snapshot) => {
+                setParticipantsCount(snapshot.size);
+            });
+            return () => unsub();
+        } else {
+            const q = query(
+                collection(db, "students"),
+                where("userId", "==", user.uid),
+                where("college", "==", selectedCollege)
+            );
+            const unsub = onSnapshot(q, (snapshot) => {
+                setParticipantsCount(snapshot.size);
+            });
+            return () => unsub();
+        }
+    }, [user, db, selectedCollege, projectConfigs]);
 
     useEffect(() => {
         const fetchProjects = async () => {
@@ -302,12 +330,12 @@ function ProductionPageContent() {
                                 </div>
                                 <div className="flex flex-wrap gap-6 pt-2">
                                     <div className="space-y-1">
-                                        <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Producción Directa</p>
-                                        <p className="text-xl font-bold text-white">{filteredOrders.filter(o => o.type !== 'project_fitting').length} <span className="text-sm font-normal text-white/50">participantes</span></p>
+                                        <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Total Participantes</p>
+                                        <p className="text-xl font-bold text-white">{participantsCount} <span className="text-sm font-normal text-white/50">registrados</span></p>
                                     </div>
                                     <div className="space-y-1 border-l border-white/10 pl-6">
-                                        <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Medidas registradas</p>
-                                        <p className="text-xl font-bold text-white">{filteredOrders.filter(o => o.type === 'project_fitting').length} <span className="text-sm font-normal text-white/50">participantes</span></p>
+                                        <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Pedidos Directos</p>
+                                        <p className="text-xl font-bold text-white">{filteredOrders.filter(o => o.type !== 'project_fitting').length} <span className="text-sm font-normal text-white/50">confirmados</span></p>
                                     </div>
                                     <div className="space-y-1 border-l border-white/10 pl-6">
                                         <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Prendas Totales</p>

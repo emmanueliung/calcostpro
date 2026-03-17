@@ -180,7 +180,7 @@ export default function PublicPaymentPage() {
                     {/* Form Fields */}
                     <div className="space-y-4 pt-4 border-t">
                         <div className="space-y-2">
-                            <Label htmlFor="note">Note / ¿Para quién es este pago? *</Label>
+                            <Label htmlFor="note">¿Motivo del pago? *</Label>
                             <Input
                                 id="note"
                                 placeholder="Ej: Juan Pérez 6to A, Polera talla M Carlos Rojas..."
@@ -206,7 +206,7 @@ export default function PublicPaymentPage() {
 
                         <div className="space-y-2">
                             <Label>Comprobante de Pago *</Label>
-                            
+
                             <Input
                                 id="proof-upload-input"
                                 type="file"

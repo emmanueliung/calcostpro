@@ -129,32 +129,32 @@ export function ClientUnifiedView({
             <TabsList className="bg-white border p-1 h-auto mb-6">
                 <TabsTrigger
                     value="participantes"
-                    className="py-2 px-5 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white"
+                    className="py-2 px-5 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white group"
                 >
                     <Users className="h-4 w-4" />
                     Participantes
-                    <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold">
+                    <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
                         {participants.length}
                     </span>
                 </TabsTrigger>
                 <TabsTrigger
                     value="produccion"
-                    className="py-2 px-5 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white"
+                    className="py-2 px-5 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white group"
                 >
                     <ClipboardList className="h-4 w-4" />
                     Producción
-                    <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold">
+                    <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
                         {orders.length}
                     </span>
                 </TabsTrigger>
                 <TabsTrigger
                     value="cobros"
-                    className="py-2 px-5 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white"
+                    className="py-2 px-5 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white group"
                 >
                     <CreditCard className="h-4 w-4" />
                     Cobros
                     {pendingOrders.length > 0 && (
-                        <span className="ml-1 text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-bold">
+                        <span className="ml-1 text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-bold group-data-[state=active]:bg-red-500 group-data-[state=active]:text-white">
                             {pendingOrders.length}
                         </span>
                     )}
