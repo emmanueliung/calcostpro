@@ -15,6 +15,8 @@ import { DollarSign, Users, ClipboardList, CreditCard, QrCode, Pencil, Trash2, C
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+import { ProductionSummary } from './production-summary';
+
 interface ClientUnifiedViewProps {
     selectedCollege: string;
     orders: Order[];
@@ -125,14 +127,21 @@ export function ClientUnifiedView({
         )).sort();
 
     return (
-        <Tabs defaultValue="participantes" className="w-full">
+        <Tabs defaultValue="produccion" className="w-full">
             <TabsList className="bg-white border p-1 h-auto mb-6">
                 <TabsTrigger
-                    value="participantes"
+                    value="produccion"
+                    className="py-2 px-5 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white group"
+                >
+                    <ClipboardList className="h-4 w-4" />
+                    Resumen de Confeccionista
+                </TabsTrigger>
+                <TabsTrigger
+                    value="detalles"
                     className="py-2 px-5 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white group"
                 >
                     <Users className="h-4 w-4" />
-                    Participantes
+                    Lista de Tallas
                     <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
                         {participants.length}
                     </span>
@@ -151,14 +160,19 @@ export function ClientUnifiedView({
                 </TabsTrigger>
             </TabsList>
 
-            {/* ─── TAB 1: PARTICIPANTES ─── */}
-            <TabsContent value="participantes" className="mt-0">
+            {/* ─── TAB 1: RESUMEN DE CONFECCIÓN ─── */}
+            <TabsContent value="produccion" className="mt-0">
+                <ProductionSummary orders={orders} collegeName={selectedCollege} />
+            </TabsContent>
+
+            {/* ─── TAB 2: LISTA DE TALLAS ─── */}
+            <TabsContent value="detalles" className="mt-0">
                 <Card className="border shadow-sm">
                     <CardHeader className="pb-3 border-b">
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-base flex items-center gap-2">
                                 <UserCheck className="h-4 w-4 text-primary" />
-                                Participantes de {selectedCollege}
+                                Lista de Participantes de {selectedCollege}
                             </CardTitle>
                             <Badge variant="outline">{participants.length} registrados</Badge>
                         </div>
@@ -179,7 +193,6 @@ export function ClientUnifiedView({
                                 <Table>
                                     <TableHeader>
                                             <TableHead className="font-semibold">Participante</TableHead>
-                                            <TableHead className="text-center">Pedido</TableHead>
                                             {allGarmentNames.map(g => (
                                                 <TableHead key={g} className="text-center">
                                                     <span className="flex items-center justify-center gap-1">
@@ -207,17 +220,6 @@ export function ClientUnifiedView({
                                                                 {p.notes && <p className="text-[10px] text-muted-foreground">{p.notes}</p>}
                                                             </div>
                                                         </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        {orders.some(o => o.studentName.toLowerCase() === p.name.toLowerCase()) ? (
-                                                            <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none text-[10px]">
-                                                                Confirmado
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge variant="outline" className="text-red-500 border-red-200 bg-red-50 animate-pulse text-[10px]">
-                                                                Falta Pedido
-                                                            </Badge>
-                                                        )}
                                                     </TableCell>
                                                     {allGarmentNames.map(g => (
                                                         <TableCell key={g} className="text-center">
