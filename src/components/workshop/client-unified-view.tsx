@@ -189,66 +189,72 @@ export function ClientUnifiedView({
                                 <p className="text-xs">Ve al <strong>Taller</strong> para registrar participantes.</p>
                             </div>
                         ) : (
-                            <ScrollArea className="max-h-[800px]">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="font-semibold">Participante</TableHead>
-                                            {allGarmentNames.map(g => (
-                                                <TableHead key={g} className="text-center">
-                                                    <span className="flex items-center justify-center gap-1">
-                                                        <Shirt className="h-3 w-3" />
-                                                        {g}
-                                                    </span>
-                                                </TableHead>
-                                            ))}
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {participants.map((p) => {
-                                            const studentOrder = orders.find(o => o.studentName.toLowerCase() === p.name.toLowerCase());
-                                            const isComplete = allGarmentNames.length > 0 && allGarmentNames.every(g => p.sizes?.[g]);
+                            <ScrollArea className="max-h-[1200px]">
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="font-semibold w-[280px] min-w-[200px] bg-slate-50/50 sticky left-0 z-10 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Participante</TableHead>
+                                                {allGarmentNames.map(g => (
+                                                    <TableHead key={g} className="text-center whitespace-nowrap px-4">
+                                                        <span className="flex items-center justify-center gap-1">
+                                                            <Shirt className="h-3 w-3" />
+                                                            {g}
+                                                        </span>
+                                                    </TableHead>
+                                                ))}
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {participants.map((p) => {
+                                                const studentOrder = orders.find(o => o.studentName.toLowerCase() === p.name.toLowerCase());
+                                                const isComplete = allGarmentNames.length > 0 && allGarmentNames.every(g => p.sizes?.[g]);
 
-                                            return (
-                                                <TableRow key={p.id} className="hover:bg-slate-50/50">
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${isComplete ? 'bg-green-500' : 'bg-slate-300'}`}>
-                                                                {p.name.charAt(0).toUpperCase()}
+                                                return (
+                                                    <TableRow key={p.id} className="hover:bg-slate-50/50">
+                                                        <TableCell className="bg-white sticky left-0 z-10 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${isComplete ? 'bg-green-500' : 'bg-slate-300'}`}>
+                                                                    {p.name.charAt(0).toUpperCase()}
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <p className="font-medium text-sm truncate">{p.name}</p>
+                                                                    {p.notes && <p className="text-[10px] text-muted-foreground truncate">{p.notes}</p>}
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <p className="font-medium text-sm">{p.name}</p>
-                                                                {p.notes && <p className="text-[10px] text-muted-foreground">{p.notes}</p>}
-                                                            </div>
-                                                        </div>
-                                                    </TableCell>
-                                                    {allGarmentNames.map(g => {
-                                                        const size = p.sizes?.[g];
-                                                        const orderItem = studentOrder?.items.find(i => i.productName.toLowerCase() === g.toLowerCase());
-                                                        const qty = orderItem?.quantity || 1;
+                                                        </TableCell>
+                                                        {allGarmentNames.map(g => {
+                                                            const size = p.sizes?.[g];
+                                                            // Better matching: check if garment name is contained in the order item name (e.g. "Camisa" in "2 camisas")
+                                                            const orderItem = studentOrder?.items.find(i => 
+                                                                i.productName.toLowerCase().includes(g.toLowerCase()) || 
+                                                                g.toLowerCase().includes(i.productName.toLowerCase().replace(/s$/, ''))
+                                                            );
+                                                            const qty = orderItem?.quantity || 1;
 
-                                                        return (
-                                                            <TableCell key={g} className="text-center">
-                                                                {size ? (
-                                                                    <Badge variant="secondary" className="text-xs font-bold gap-1">
-                                                                        {size}
-                                                                        {qty > 1 && (
-                                                                            <span className="text-[10px] text-primary bg-primary/10 px-1 rounded">
-                                                                                ({qty})
-                                                                            </span>
-                                                                        )}
-                                                                    </Badge>
-                                                                ) : (
-                                                                    <span className="text-muted-foreground/40 text-xs">—</span>
-                                                                )}
-                                                            </TableCell>
-                                                        );
-                                                    })}
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
+                                                            return (
+                                                                <TableCell key={g} className="text-center px-4">
+                                                                    {size ? (
+                                                                        <Badge variant="secondary" className="text-xs font-bold gap-1 whitespace-nowrap">
+                                                                            {size}
+                                                                            {qty > 1 && (
+                                                                                <span className="text-[10px] text-primary bg-primary/10 px-1 rounded">
+                                                                                    ({qty})
+                                                                                </span>
+                                                                            )}
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <span className="text-muted-foreground/40 text-xs">—</span>
+                                                                    )}
+                                                                </TableCell>
+                                                            );
+                                                        })}
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </ScrollArea>
                         )}
                     </CardContent>
