@@ -633,6 +633,8 @@ export function StudentSelector({ onSelectStudent, selectedStudentId }: StudentS
                         </DialogFooter>
                     </DialogContent >
                 </Dialog >
+            </div>
+
             <ScrollArea className="flex-1 border rounded-md">
                 <div className="p-2 pr-10 space-y-4">
                     {filteredStudents.length === 0 ? (
