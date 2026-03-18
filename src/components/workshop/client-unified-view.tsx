@@ -198,118 +198,119 @@ export function ClientUnifiedView({
                                 <p className="text-xs">Ve al <strong>Taller</strong> para registrar participantes.</p>
                             </div>
                         ) : (
-                            <ScrollArea className="max-h-none">
-                                <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="font-semibold bg-white">Participante</TableHead>
-                                                {allGarmentNames.map(g => (
-                                                    <TableHead key={g} className="text-center whitespace-nowrap px-4">
-                                                        <span className="flex items-center justify-center gap-1">
-                                                            <Shirt className="h-3 w-3" />
-                                                            {g}
-                                                        </span>
-                                                    </TableHead>
-                                                ))}
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {paginatedParticipants.map((p) => {
-                                                const studentOrder = orders.find(o => o.studentName.toLowerCase().trim() === p.name.toLowerCase().trim());
-                                                const isComplete = allGarmentNames.length > 0 && allGarmentNames.every(g => p.sizes?.[g]);
+                            <>
+                                <ScrollArea className="max-h-none">
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="font-semibold bg-white">Participante</TableHead>
+                                                    {allGarmentNames.map(g => (
+                                                        <TableHead key={g} className="text-center whitespace-nowrap px-4">
+                                                            <span className="flex items-center justify-center gap-1">
+                                                                <Shirt className="h-3 w-3" />
+                                                                {g}
+                                                            </span>
+                                                        </TableHead>
+                                                    ))}
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {paginatedParticipants.map((p) => {
+                                                    const studentOrder = orders.find(o => o.studentName.toLowerCase().trim() === p.name.toLowerCase().trim());
+                                                    const isComplete = allGarmentNames.length > 0 && allGarmentNames.every(g => p.sizes?.[g]);
 
-                                                return (
-                                                    <TableRow key={p.id} className="hover:bg-slate-50/50">
-                                                        <TableCell className="bg-white">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${isComplete ? 'bg-green-500' : 'bg-slate-300'}`}>
-                                                                    {p.name.charAt(0).toUpperCase()}
+                                                    return (
+                                                        <TableRow key={p.id} className="hover:bg-slate-50/50">
+                                                            <TableCell className="bg-white">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${isComplete ? 'bg-green-500' : 'bg-slate-300'}`}>
+                                                                        {p.name.charAt(0).toUpperCase()}
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <p className="font-medium text-sm whitespace-nowrap">{p.name}</p>
+                                                                        {p.notes && <p className="text-[10px] text-muted-foreground truncate">{p.notes}</p>}
+                                                                    </div>
                                                                 </div>
-                                                                <div className="min-w-0">
-                                                                    <p className="font-medium text-sm whitespace-nowrap">{p.name}</p>
-                                                                    {p.notes && <p className="text-[10px] text-muted-foreground truncate">{p.notes}</p>}
-                                                                </div>
-                                                            </div>
-                                                        </TableCell>
-                                                        {allGarmentNames.map(g => {
-                                                            const size = p.sizes?.[g];
-                                                            
-                                                            // Logic: Match if the order item name contains the garment name or vice-versa
-                                                            // Handles "Camisa" matching "2 camisas" or "Camisas" matching "Camisa"
-                                                            const orderItem = studentOrder?.items.find(i => {
-                                                                const pName = i.productName.toLowerCase().trim();
-                                                                const gName = g.toLowerCase().trim();
-                                                                const gSingular = gName.endsWith('s') ? gName.slice(0, -1) : gName;
-                                                                const pSingular = pName.endsWith('s') ? pName.slice(0, -1) : pName;
+                                                            </TableCell>
+                                                            {allGarmentNames.map(g => {
+                                                                const size = p.sizes?.[g];
                                                                 
-                                                                return pName.includes(gName) || 
-                                                                       gName.includes(pName) ||
-                                                                       pSingular === gSingular ||
-                                                                       pName.includes(gSingular);
-                                                            });
-                                                            
-                                                            const qty = orderItem?.quantity || 1;
+                                                                const orderItem = studentOrder?.items.find(i => {
+                                                                    const pName = i.productName.toLowerCase().trim();
+                                                                    const gName = g.toLowerCase().trim();
+                                                                    const gSingular = gName.endsWith('s') ? gName.slice(0, -1) : gName;
+                                                                    const pSingular = pName.endsWith('s') ? pName.slice(0, -1) : pName;
+                                                                    
+                                                                    return pName.includes(gName) || 
+                                                                           gName.includes(pName) ||
+                                                                           pSingular === gSingular ||
+                                                                           pName.includes(gSingular);
+                                                                });
+                                                                
+                                                                const qty = orderItem?.quantity || 1;
 
-                                                            return (
-                                                                <TableCell key={g} className="text-center px-4">
-                                                                    {size ? (
-                                                                        <Badge variant="secondary" className="text-xs font-bold gap-1 whitespace-nowrap">
-                                                                            {size}
-                                                                            {qty > 1 && (
-                                                                                <span className="text-[10px] text-primary bg-primary/10 px-1 rounded">
-                                                                                    ({qty})
-                                                                                </span>
-                                                                            )}
-                                                                        </Badge>
-                                                                    ) : (
-                                                                        <span className="text-muted-foreground/40 text-xs">—</span>
-                                                                    )}
-                                                                </TableCell>
-                                                            );
-                                                        })}
-                                                    </TableRow>
-                                                );
-                                            })}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </ScrollArea>
-                            
-                            {/* Pagination Controls */}
-                            {totalPages > 1 && (
-                                <div className="flex items-center justify-between px-4 py-3 border-t bg-slate-50/50">
-                                    <div className="text-xs text-muted-foreground">
-                                        Mostrando <span className="font-medium">{startIndex + 1}</span> a <span className="font-medium">{Math.min(startIndex + itemsPerPage, participants.length)}</span> de <span className="font-medium">{participants.length}</span> resultados
+                                                                return (
+                                                                    <TableCell key={g} className="text-center px-4">
+                                                                        {size ? (
+                                                                            <Badge variant="secondary" className="text-xs font-bold gap-1 whitespace-nowrap">
+                                                                                {size}
+                                                                                {qty > 1 && (
+                                                                                    <span className="text-[10px] text-primary bg-primary/10 px-1 rounded">
+                                                                                        ({qty})
+                                                                                    </span>
+                                                                                )}
+                                                                            </Badge>
+                                                                        ) : (
+                                                                            <span className="text-muted-foreground/40 text-xs">—</span>
+                                                                        )}
+                                                                    </TableCell>
+                                                                );
+                                                            })}
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                            disabled={currentPage === 1}
-                                            className="h-8 w-8 p-0"
-                                        >
-                                            <ChevronLeft className="h-4 w-4" />
-                                        </Button>
-                                        <div className="text-xs font-medium">
-                                            Página {currentPage} de {totalPages}
+                                </ScrollArea>
+                                
+                                {/* Pagination Controls */}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-between px-4 py-3 border-t bg-slate-50/50">
+                                        <div className="text-xs text-muted-foreground">
+                                            Mostrando <span className="font-medium">{startIndex + 1}</span> a <span className="font-medium">{Math.min(startIndex + itemsPerPage, participants.length)}</span> de <span className="font-medium">{participants.length}</span> resultados
                                         </div>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                            disabled={currentPage === totalPages}
-                                            className="h-8 w-8 p-0"
-                                        >
-                                            <ChevronRight className="h-4 w-4" />
-                                        </Button>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                disabled={currentPage === 1}
+                                                className="h-8 w-8 p-0"
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </Button>
+                                            <div className="text-xs font-medium">
+                                                Página {currentPage} de {totalPages}
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                disabled={currentPage === totalPages}
+                                                className="h-8 w-8 p-0"
+                                            >
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                                )}
+                            </>
+                        )}
+                    </CardContent>
+                </Card>
+            </TabsContent>
 
 
             {/* ─── TAB 3: COBROS ─── */}
