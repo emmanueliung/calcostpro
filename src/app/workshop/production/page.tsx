@@ -351,7 +351,7 @@ function ProductionPageContent() {
                                     </div>
                                 </div>
                             </div>
-                            {activeProject && (
+                             {activeProject && (
                                 <div className="bg-white/5 p-6 md:w-1/3 border-l border-white/10 space-y-4">
                                     <h4 className="text-xs font-bold uppercase tracking-widest text-white/50">Acciones del Proyecto</h4>
                                     <div className="grid grid-cols-1 gap-2">
@@ -371,28 +371,12 @@ function ProductionPageContent() {
                                         >
                                             <FileText className="w-4 h-4 mr-2" /> Resumen de Compra
                                         </Button>
-                                        <Button
-                                            variant="outline"
-                                            className="justify-start bg-white/10 border-white/10 hover:bg-white/20 text-white h-9"
-                                            size="sm"
-                                            onClick={() => setShowSummary(!showSummary)}
-                                        >
-                                            <Printer className="w-4 h-4 mr-2" /> 
-                                            {showSummary ? 'Ocultar Resumen' : 'Resumen para Confección'}
-                                        </Button>
                                     </div>
                                 </div>
                             )}
                             {!activeProject && (
                                 <div className="bg-white/5 p-6 md:w-1/3 border-l border-white/10 flex items-center justify-center">
-                                    <Button
-                                        variant="outline"
-                                        className="bg-white/10 border-white/10 hover:bg-white/20 text-white h-12 px-6"
-                                        onClick={() => setShowSummary(!showSummary)}
-                                    >
-                                        <Printer className="w-5 h-5 mr-2" />
-                                        {showSummary ? 'Ocultar Resumen' : 'Resumen Confeccionista'}
-                                    </Button>
+                                    <p className="text-white/30 text-xs italic text-center">Sin ficha técnica vinculada</p>
                                 </div>
                             )}
                         </div>
