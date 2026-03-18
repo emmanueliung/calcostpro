@@ -266,14 +266,16 @@ export function ClientUnifiedView({
                                                                 return (
                                                                     <TableCell key={g} className="text-center px-4">
                                                                         {size ? (
-                                                                            <Badge variant="secondary" className="text-xs font-bold gap-1 whitespace-nowrap">
-                                                                                {size}
+                                                                            <div className="flex items-center justify-center gap-1.5">
+                                                                                <Badge variant="secondary" className="text-xs font-bold whitespace-nowrap px-2">
+                                                                                    {size}
+                                                                                </Badge>
                                                                                 {qty > 1 && (
-                                                                                    <span className="text-[10px] text-primary bg-primary/10 px-1 rounded">
-                                                                                        ({qty})
+                                                                                    <span className="text-xs font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10 shadow-sm animate-in fade-in zoom-in duration-300">
+                                                                                        x{qty}
                                                                                     </span>
                                                                                 )}
-                                                                            </Badge>
+                                                                            </div>
                                                                         ) : (
                                                                             <span className="text-muted-foreground/40 text-xs">—</span>
                                                                         )}
