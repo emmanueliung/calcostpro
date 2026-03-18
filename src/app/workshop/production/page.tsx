@@ -518,7 +518,24 @@ function ProductionPageContent() {
                 /* ─── FICHA UNIFICADA: se activa cuando hay un cliente seleccionado ─── */
                 <ClientUnifiedView
                     selectedCollege={selectedCollege}
-                    orders={filteredOrders}
+                    orders={[
+                        ...filteredOrders,
+                        ...publicOrders
+                            .filter(po => (selectedCollege === "all" || po.college === selectedCollege) && po.status !== 'cancelled')
+                            .map(po => ({
+                                id: po.id,
+                                userId: po.userId,
+                                studentId: '', 
+                                studentName: po.customer?.name || po.notes || 'Anónimo',
+                                items: po.items || [],
+                                status: po.status as any,
+                                totalAmount: po.totalAmount,
+                                paidAmount: po.totalAmount,
+                                balance: 0,
+                                createdAt: po.createdAt,
+                                updatedAt: po.updatedAt
+                            } as Order))
+                    ]}
                     projectConfigs={projectConfigs}
                     onPaymentClick={(order) => { setPaymentOrder(order); setContentOpen(true); }}
                     onStatusChange={handleStatusChange}
@@ -528,6 +545,7 @@ function ProductionPageContent() {
                         setTempPaidAmount(order.paidAmount || 0);
                         setIsEditAmountDialogOpen(true);
                     }}
+                    searchTerm={searchTerm}
                 />
             )}
 

@@ -25,6 +25,7 @@ interface ClientUnifiedViewProps {
     onStatusChange: (orderId: string, status: OrderStatus) => void;
     onDeleteOrder: (orderId: string) => void;
     onEditAmountClick: (order: Order) => void;
+    searchTerm?: string;
 }
 
 export function ClientUnifiedView({
@@ -35,6 +36,7 @@ export function ClientUnifiedView({
     onStatusChange,
     onDeleteOrder,
     onEditAmountClick,
+    searchTerm = "",
 }: ClientUnifiedViewProps) {
     const { user } = useUser();
     const db = useFirestore();
@@ -130,10 +132,20 @@ export function ClientUnifiedView({
             participants.flatMap(p => Object.keys(p.sizes || {}))
         )).sort();
 
+    // Filters: Filter participants by searchTerm
+    const filteredParticipants = participants.filter(p => 
+        p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     // Paginated participants
-    const totalPages = Math.ceil(participants.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredParticipants.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedParticipants = participants.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedParticipants = filteredParticipants.slice(startIndex, startIndex + itemsPerPage);
+
+    // Reset to page 1 when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
 
     return (
         <Tabs defaultValue="produccion" className="w-full">
@@ -152,7 +164,7 @@ export function ClientUnifiedView({
                     <Users className="h-4 w-4" />
                     Lista de Tallas
                     <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
-                        {participants.length}
+                        {filteredParticipants.length}
                     </span>
                 </TabsTrigger>
                 <TabsTrigger
@@ -183,7 +195,7 @@ export function ClientUnifiedView({
                                 <UserCheck className="h-4 w-4 text-primary" />
                                 Lista de Participantes de {selectedCollege}
                             </CardTitle>
-                            <Badge variant="outline">{participants.length} registrados</Badge>
+                            <Badge variant="outline">{searchTerm ? `${filteredParticipants.length} encontrados` : `${participants.length} registrados`}</Badge>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -191,11 +203,11 @@ export function ClientUnifiedView({
                             <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
                                 Cargando participantes...
                             </div>
-                        ) : participants.length === 0 ? (
+                        ) : filteredParticipants.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-40 text-muted-foreground gap-2">
                                 <Users className="h-8 w-8 opacity-30" />
-                                <p className="text-sm">No hay participantes registrados para este cliente.</p>
-                                <p className="text-xs">Ve al <strong>Taller</strong> para registrar participantes.</p>
+                                <p className="text-sm">{searchTerm ? "No se encontraron participantes que coincidan." : "No hay participantes registrados para este cliente."}</p>
+                                {!searchTerm && <p className="text-xs">Ve al <strong>Taller</strong> para registrar participantes.</p>}
                             </div>
                         ) : (
                             <>
@@ -217,7 +229,9 @@ export function ClientUnifiedView({
                                             </TableHeader>
                                             <TableBody>
                                                 {paginatedParticipants.map((p) => {
-                                                    const studentOrder = orders.find(o => o.studentName.toLowerCase().trim() === p.name.toLowerCase().trim());
+                                                    const normalize = (s: string) => s ? s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+                                                    const pNameNormalized = normalize(p.name);
+                                                    const studentOrder = orders.find(o => normalize(o.studentName) === pNameNormalized);
                                                     const isComplete = allGarmentNames.length > 0 && allGarmentNames.every(g => p.sizes?.[g]);
 
                                                     return (
@@ -229,14 +243,13 @@ export function ClientUnifiedView({
                                                                     </div>
                                                                     <div className="min-w-0">
                                                                         <p className="font-medium text-sm whitespace-nowrap">{p.name}</p>
-                                                                        {p.notes && <p className="text-[10px] text-muted-foreground truncate">{p.notes}</p>}
                                                                     </div>
                                                                 </div>
                                                             </TableCell>
                                                             {allGarmentNames.map(g => {
                                                                 const size = p.sizes?.[g];
                                                                 
-                                                                const orderItem = studentOrder?.items.find(i => {
+                                                                const matchingItems = studentOrder?.items.filter(i => {
                                                                     const pName = i.productName.toLowerCase().trim();
                                                                     const gName = g.toLowerCase().trim();
                                                                     const gSingular = gName.endsWith('s') ? gName.slice(0, -1) : gName;
@@ -248,7 +261,7 @@ export function ClientUnifiedView({
                                                                            pName.includes(gSingular);
                                                                 });
                                                                 
-                                                                const qty = orderItem?.quantity || 1;
+                                                                const qty = matchingItems?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 1;
 
                                                                 return (
                                                                     <TableCell key={g} className="text-center px-4">
@@ -279,7 +292,7 @@ export function ClientUnifiedView({
                                 {totalPages > 1 && (
                                     <div className="flex items-center justify-between px-4 py-3 border-t bg-slate-50/50">
                                         <div className="text-xs text-muted-foreground">
-                                            Mostrando <span className="font-medium">{startIndex + 1}</span> a <span className="font-medium">{Math.min(startIndex + itemsPerPage, participants.length)}</span> de <span className="font-medium">{participants.length}</span> resultados
+                                            Mostrando <span className="font-medium">{startIndex + 1}</span> a <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredParticipants.length)}</span> de <span className="font-medium">{filteredParticipants.length}</span> resultados
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Button
