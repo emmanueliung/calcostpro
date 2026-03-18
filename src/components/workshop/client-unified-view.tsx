@@ -272,7 +272,7 @@ export function ClientUnifiedView({
                                                                                 </Badge>
                                                                                 {qty > 1 && (
                                                                                     <span className="text-xs font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10 shadow-sm animate-in fade-in zoom-in duration-300">
-                                                                                        x{qty}
+                                                                                        ({qty})
                                                                                     </span>
                                                                                 )}
                                                                             </div>
