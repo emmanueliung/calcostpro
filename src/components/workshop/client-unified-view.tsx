@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, query, where, onSnapshot, getDoc, doc } from 'firebase/firestore';
 import { Order, OrderStatus, Student, ProjectConfiguration, Fitting } from '@/lib/types';
@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChevronLeft, ChevronRight, DollarSign, Users, ClipboardList, CreditCard, QrCode, Pencil, Trash2, CheckCircle2, AlertCircle, UserCheck, Shirt, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, DollarSign, Users, ClipboardList, CreditCard, QrCode, Pencil, Trash2, CheckCircle2, AlertCircle, UserCheck, Shirt, Upload, Printer } from 'lucide-react';
+import { useReactToPrint } from 'react-to-print';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -45,6 +46,12 @@ export function ClientUnifiedView({
     const [participants, setParticipants] = useState<Student[]>([]);
     const [isLoadingParticipants, setIsLoadingParticipants] = useState(true);
     const [savedQrCode, setSavedQrCode] = useState<string | null>(null);
+
+    const printRef = useRef<HTMLDivElement>(null);
+    const handlePrint = useReactToPrint({
+        content: () => printRef.current,
+        documentTitle: `Lista_Participantes_${selectedCollege}`,
+    });
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -195,134 +202,216 @@ export function ClientUnifiedView({
                                 <UserCheck className="h-4 w-4 text-primary" />
                                 Lista de Participantes de {selectedCollege}
                             </CardTitle>
-                            <Badge variant="outline">{searchTerm ? `${filteredParticipants.length} encontrados` : `${participants.length} registrados`}</Badge>
+                            <div className="flex items-center gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="h-8 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
+                                    onClick={handlePrint}
+                                    disabled={filteredParticipants.length === 0}
+                                >
+                                    <Printer className="h-4 w-4" />
+                                    <span className="hidden sm:inline text-xs font-semibold">Imprimir</span>
+                                </Button>
+                                <Badge variant="outline">{searchTerm ? `${filteredParticipants.length} encontrados` : `${participants.length} registrados`}</Badge>
+                            </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-0">
-                        {isLoadingParticipants ? (
-                            <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-                                Cargando participantes...
+                    <CardContent className="p-0" ref={printRef}>
+                        {/* ─── VERSION PARA IMPRESIÓN (OCULTA EN UI) ─── */}
+                        <div className="hidden print:block p-8">
+                            <div className="flex justify-between items-end border-b-2 border-black pb-4 mb-6">
+                                <div>
+                                    <h1 className="text-2xl font-bold uppercase tracking-tight">Lista de Participantes</h1>
+                                    <p className="text-lg font-bold text-slate-800">{selectedCollege}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs font-bold text-slate-500 uppercase">Total registrados</p>
+                                    <p className="text-xl font-black">{filteredParticipants.length}</p>
+                                </div>
                             </div>
-                        ) : filteredParticipants.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-40 text-muted-foreground gap-2">
-                                <Users className="h-8 w-8 opacity-30" />
-                                <p className="text-sm">{searchTerm ? "No se encontraron participantes que coincidan." : "No hay participantes registrados para este cliente."}</p>
-                                {!searchTerm && <p className="text-xs">Ve al <strong>Taller</strong> para registrar participantes.</p>}
-                            </div>
-                        ) : (
-                            <>
-                                <ScrollArea className="max-h-none">
-                                    <div className="overflow-x-auto">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="font-semibold bg-white">Participante</TableHead>
-                                                    {allGarmentNames.map(g => (
-                                                        <TableHead key={g} className="text-center whitespace-nowrap px-4">
-                                                            <span className="flex items-center justify-center gap-1">
-                                                                <Shirt className="h-3 w-3" />
-                                                                {g}
-                                                            </span>
-                                                        </TableHead>
-                                                    ))}
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {paginatedParticipants.map((p) => {
-                                                    const normalize = (s: string) => s ? s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
-                                                    const pNameNormalized = normalize(p.name);
-                                                    const studentOrder = orders.find(o => normalize(o.studentName) === pNameNormalized);
-                                                    const isComplete = allGarmentNames.length > 0 && allGarmentNames.every(g => p.sizes?.[g]);
+
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="border-black">
+                                        <TableHead className="font-bold text-black border-black h-10">Participante</TableHead>
+                                        {allGarmentNames.map(g => (
+                                            <TableHead key={g} className="text-center font-bold text-black border-black h-10 px-2 uppercase text-[10px]">
+                                                {g}
+                                            </TableHead>
+                                        ))}
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredParticipants.map((p) => {
+                                        const normalize = (s: string) => s ? s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+                                        const pNameNormalized = normalize(p.name);
+                                        const studentOrder = orders.find(o => normalize(o.studentName) === pNameNormalized);
+
+                                        return (
+                                            <TableRow key={p.id} className="border-slate-200">
+                                                <TableCell className="py-2 font-medium text-sm border-r">
+                                                    {p.name}
+                                                </TableCell>
+                                                {allGarmentNames.map(g => {
+                                                    const size = p.sizes?.[g];
+                                                    const matchingItems = studentOrder?.items.filter(i => {
+                                                        const pName = i.productName.toLowerCase().trim();
+                                                        const gName = g.toLowerCase().trim();
+                                                        return pName.includes(gName) || gName.includes(pName);
+                                                    });
+                                                    const qty = matchingItems?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 1;
 
                                                     return (
-                                                        <TableRow key={p.id} className="hover:bg-slate-50/50">
-                                                            <TableCell className="bg-white">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${isComplete ? 'bg-green-500' : 'bg-slate-300'}`}>
-                                                                        {p.name.charAt(0).toUpperCase()}
-                                                                    </div>
-                                                                    <div className="min-w-0">
-                                                                        <p className="font-medium text-sm whitespace-nowrap">{p.name}</p>
-                                                                    </div>
+                                                        <TableCell key={g} className="text-center py-2 px-1 border-r last:border-r-0">
+                                                            {size ? (
+                                                                <div className="flex flex-col items-center justify-center leading-tight">
+                                                                    <span className="font-bold text-sm">{size}</span>
+                                                                    {qty > 1 && <span className="text-[9px] font-black underline">CANT: {qty}</span>}
                                                                 </div>
-                                                            </TableCell>
-                                                            {allGarmentNames.map(g => {
-                                                                const size = p.sizes?.[g];
-                                                                
-                                                                const matchingItems = studentOrder?.items.filter(i => {
-                                                                    const pName = i.productName.toLowerCase().trim();
-                                                                    const gName = g.toLowerCase().trim();
-                                                                    const gSingular = gName.endsWith('s') ? gName.slice(0, -1) : gName;
-                                                                    const pSingular = pName.endsWith('s') ? pName.slice(0, -1) : pName;
-                                                                    
-                                                                    return pName.includes(gName) || 
-                                                                           gName.includes(pName) ||
-                                                                           pSingular === gSingular ||
-                                                                           pName.includes(gSingular);
-                                                                });
-                                                                
-                                                                const qty = matchingItems?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 1;
-
-                                                                return (
-                                                                    <TableCell key={g} className="text-center px-4">
-                                                                        {size ? (
-                                                                            <div className="flex items-center justify-center gap-1.5">
-                                                                                <Badge variant="secondary" className="text-xs font-bold whitespace-nowrap px-2">
-                                                                                    {size}
-                                                                                </Badge>
-                                                                                {qty > 1 && (
-                                                                                    <span className="text-xs font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10 shadow-sm animate-in fade-in zoom-in duration-300">
-                                                                                        ({qty})
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-                                                                        ) : (
-                                                                            <span className="text-muted-foreground/40 text-xs">—</span>
-                                                                        )}
-                                                                    </TableCell>
-                                                                );
-                                                            })}
-                                                        </TableRow>
+                                                            ) : (
+                                                                <span className="text-slate-300">—</span>
+                                                            )}
+                                                        </TableCell>
                                                     );
                                                 })}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                </ScrollArea>
-                                
-                                {/* Pagination Controls */}
-                                {totalPages > 1 && (
-                                    <div className="flex items-center justify-between px-4 py-3 border-t bg-slate-50/50">
-                                        <div className="text-xs text-muted-foreground">
-                                            Mostrando <span className="font-medium">{startIndex + 1}</span> a <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredParticipants.length)}</span> de <span className="font-medium">{filteredParticipants.length}</span> resultados
+                                            </TableRow>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                            <div className="mt-8 text-[10px] text-slate-400 font-mono text-center">
+                                Generado por CalcostPro - {new Date().toLocaleString()}
+                            </div>
+                        </div>
+
+                        {/* ─── VERSION PARA UI INTERACTIVA ─── */}
+                        <div className="print:hidden">
+                            {isLoadingParticipants ? (
+                                <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
+                                    Cargando participantes...
+                                </div>
+                            ) : filteredParticipants.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-40 text-muted-foreground gap-2">
+                                    <Users className="h-8 w-8 opacity-30" />
+                                    <p className="text-sm">{searchTerm ? "No se encontraron participantes que coincidan." : "No hay participantes registrados para este cliente."}</p>
+                                    {!searchTerm && <p className="text-xs">Ve al <strong>Taller</strong> para registrar participantes.</p>}
+                                </div>
+                            ) : (
+                                <>
+                                    <ScrollArea className="max-h-none">
+                                        <div className="overflow-x-auto">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="font-semibold bg-white">Participante</TableHead>
+                                                        {allGarmentNames.map(g => (
+                                                            <TableHead key={g} className="text-center whitespace-nowrap px-4">
+                                                                <span className="flex items-center justify-center gap-1">
+                                                                    <Shirt className="h-3 w-3" />
+                                                                    {g}
+                                                                </span>
+                                                            </TableHead>
+                                                        ))}
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {paginatedParticipants.map((p) => {
+                                                        const normalize = (s: string) => s ? s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+                                                        const pNameNormalized = normalize(p.name);
+                                                        const studentOrder = orders.find(o => normalize(o.studentName) === pNameNormalized);
+                                                        const isComplete = allGarmentNames.length > 0 && allGarmentNames.every(g => p.sizes?.[g]);
+
+                                                        return (
+                                                            <TableRow key={p.id} className="hover:bg-slate-50/50">
+                                                                <TableCell className="bg-white">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${isComplete ? 'bg-green-500' : 'bg-slate-300'}`}>
+                                                                            {p.name.charAt(0).toUpperCase()}
+                                                                        </div>
+                                                                        <div className="min-w-0">
+                                                                            <p className="font-medium text-sm whitespace-nowrap">{p.name}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </TableCell>
+                                                                {allGarmentNames.map(g => {
+                                                                    const size = p.sizes?.[g];
+                                                                    
+                                                                    const matchingItems = studentOrder?.items.filter(i => {
+                                                                        const pName = i.productName.toLowerCase().trim();
+                                                                        const gName = g.toLowerCase().trim();
+                                                                        const gSingular = gName.endsWith('s') ? gName.slice(0, -1) : gName;
+                                                                        const pSingular = pName.endsWith('s') ? pName.slice(0, -1) : pName;
+                                                                        
+                                                                        return pName.includes(gName) || 
+                                                                               gName.includes(pName) ||
+                                                                               pSingular === gSingular ||
+                                                                               pName.includes(gSingular);
+                                                                    });
+                                                                    
+                                                                    const qty = matchingItems?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 1;
+
+                                                                    return (
+                                                                        <TableCell key={g} className="text-center px-4">
+                                                                            {size ? (
+                                                                                <div className="flex items-center justify-center gap-1.5">
+                                                                                    <Badge variant="secondary" className="text-xs font-bold whitespace-nowrap px-2">
+                                                                                        {size}
+                                                                                    </Badge>
+                                                                                    {qty > 1 && (
+                                                                                        <span className="text-xs font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10 shadow-sm animate-in fade-in zoom-in duration-300">
+                                                                                            ({qty})
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            ) : (
+                                                                                <span className="text-muted-foreground/40 text-xs">—</span>
+                                                                            )}
+                                                                        </TableCell>
+                                                                    );
+                                                                })}
+                                                            </TableRow>
+                                                        );
+                                                    })}
+                                                </TableBody>
+                                            </Table>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                                disabled={currentPage === 1}
-                                                className="h-8 w-8 p-0"
-                                            >
-                                                <ChevronLeft className="h-4 w-4" />
-                                            </Button>
-                                            <div className="text-xs font-medium">
-                                                Página {currentPage} de {totalPages}
+                                    </ScrollArea>
+                                    
+                                    {/* Pagination Controls */}
+                                    {totalPages > 1 && (
+                                        <div className="flex items-center justify-between px-4 py-3 border-t bg-slate-50/50">
+                                            <div className="text-xs text-muted-foreground">
+                                                Mostrando <span className="font-medium">{startIndex + 1}</span> a <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredParticipants.length)}</span> de <span className="font-medium">{filteredParticipants.length}</span> resultados
                                             </div>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                                disabled={currentPage === totalPages}
-                                                className="h-8 w-8 p-0"
-                                            >
-                                                <ChevronRight className="h-4 w-4" />
-                                            </Button>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                    disabled={currentPage === 1}
+                                                    className="h-8 w-8 p-0"
+                                                >
+                                                    <ChevronLeft className="h-4 w-4" />
+                                                </Button>
+                                                <div className="text-xs font-medium">
+                                                    Página {currentPage} de {totalPages}
+                                                </div>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                    disabled={currentPage === totalPages}
+                                                    className="h-8 w-8 p-0"
+                                                >
+                                                    <ChevronRight className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </>
-                        )}
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
             </TabsContent>
