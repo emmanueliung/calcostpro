@@ -197,15 +197,15 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
     return (
         <Card className="border shadow-none">
             <CardHeader className="bg-slate-50 border-b">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <CardTitle className="text-xl">Resumen de Producción</CardTitle>
-                        <p className="text-sm text-muted-foreground">{collegeName === 'all' ? 'Todos los colegios' : collegeName}</p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+                    <div className="min-w-0">
+                        <CardTitle className="text-lg sm:text-xl">Resumen de Producción</CardTitle>
+                        <p className="text-sm text-muted-foreground truncate">{collegeName === 'all' ? 'Todos los colegios' : collegeName}</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-[200px]">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex-1 min-w-[150px] sm:w-[200px] sm:flex-none">
                             <Select value={selectedGarment} onValueChange={setSelectedGarment}>
-                                <SelectTrigger className="h-8">
+                                <SelectTrigger className="h-8 w-full">
                                     <SelectValue placeholder="Filtrar por prenda" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -216,11 +216,11 @@ export function ProductionSummary({ orders, collegeName }: ProductionSummaryProp
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Button variant="outline" size="sm" onClick={handlePrint}>
-                            <Printer className="h-4 w-4 mr-2" />
-                            Imprimir
+                        <Button variant="outline" size="sm" onClick={handlePrint} className="shrink-0">
+                            <Printer className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Imprimir</span>
                         </Button>
-                        <Badge variant="secondary" className="px-3 py-1 text-sm font-bold">
+                        <Badge variant="secondary" className="px-3 py-1 text-sm font-bold shrink-0">
                             {totalGarments} prendas
                         </Badge>
                     </div>

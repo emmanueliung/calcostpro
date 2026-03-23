@@ -156,32 +156,34 @@ export function ClientUnifiedView({
 
     return (
         <Tabs defaultValue="produccion" className="w-full">
-            <TabsList className="bg-white border p-1 h-auto mb-6">
+            <TabsList className="bg-white border p-1 h-auto mb-6 w-full flex">
                 <TabsTrigger
                     value="produccion"
-                    className="py-2 px-5 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white group"
+                    className="flex-1 py-2 px-2 sm:px-5 flex items-center justify-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-white group text-xs sm:text-sm"
                 >
-                    <ClipboardList className="h-4 w-4" />
-                    Resumen de Confeccionista
+                    <ClipboardList className="h-4 w-4 shrink-0" />
+                    <span className="hidden sm:inline">Resumen de Confeccionista</span>
+                    <span className="sm:hidden">Resumen</span>
                 </TabsTrigger>
                 <TabsTrigger
                     value="detalles"
-                    className="py-2 px-5 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white group"
+                    className="flex-1 py-2 px-2 sm:px-5 flex items-center justify-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-white group text-xs sm:text-sm"
                 >
-                    <Users className="h-4 w-4" />
-                    Lista de Tallas
-                    <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
+                    <Users className="h-4 w-4 shrink-0" />
+                    <span className="hidden sm:inline">Lista de Tallas</span>
+                    <span className="sm:hidden">Tallas</span>
+                    <span className="ml-0.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
                         {filteredParticipants.length}
                     </span>
                 </TabsTrigger>
                 <TabsTrigger
                     value="cobros"
-                    className="py-2 px-5 flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white group"
+                    className="flex-1 py-2 px-2 sm:px-5 flex items-center justify-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-white group text-xs sm:text-sm"
                 >
-                    <CreditCard className="h-4 w-4" />
+                    <CreditCard className="h-4 w-4 shrink-0" />
                     Cobros
                     {pendingOrders.length > 0 && (
-                        <span className="ml-1 text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-bold group-data-[state=active]:bg-red-500 group-data-[state=active]:text-white">
+                        <span className="ml-0.5 text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-bold group-data-[state=active]:bg-red-500 group-data-[state=active]:text-white">
                             {pendingOrders.length}
                         </span>
                     )}
@@ -197,12 +199,12 @@ export function ClientUnifiedView({
             <TabsContent value="detalles" className="mt-0">
                 <Card className="border shadow-sm">
                     <CardHeader className="pb-3 border-b">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <UserCheck className="h-4 w-4 text-primary" />
-                                Lista de Participantes de {selectedCollege}
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <CardTitle className="text-sm sm:text-base flex items-center gap-2 min-w-0">
+                                <UserCheck className="h-4 w-4 text-primary shrink-0" />
+                                <span className="truncate">Lista de Participantes de {selectedCollege}</span>
                             </CardTitle>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 shrink-0">
                                 <Button 
                                     variant="outline" 
                                     size="sm" 
@@ -213,7 +215,7 @@ export function ClientUnifiedView({
                                     <Printer className="h-4 w-4" />
                                     <span className="hidden sm:inline text-xs font-semibold">Imprimir</span>
                                 </Button>
-                                <Badge variant="outline">{searchTerm ? `${filteredParticipants.length} encontrados` : `${participants.length} registrados`}</Badge>
+                                <Badge variant="outline" className="text-xs whitespace-nowrap">{searchTerm ? `${filteredParticipants.length} encontrados` : `${participants.length} registrados`}</Badge>
                             </div>
                         </div>
                     </CardHeader>
