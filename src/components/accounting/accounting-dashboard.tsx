@@ -81,23 +81,56 @@ export default function AccountingDashboard() {
         if (!csvData.trim() || !user) return;
         setIsImporting(true);
         try {
-            // Very naive CSV parsing: N° Facture, Date, NIT, Fournisseur/Client, Montant Total, Crédit/Débit Fiscal, Type (Achat/Vente)
             const lines = csvData.trim().split('\n');
+            if (lines.length < 1) return;
+
+            // Detect separator (comma, semicolon or tab)
+            const firstLine = lines[0];
+            let separator = ",";
+            if (firstLine.includes(';')) separator = ";";
+            else if (firstLine.includes('\t')) separator = "\t";
+
+            const headers = lines[0].split(separator).map(h => h.trim().toUpperCase());
+            
+            // Map headers to indices
+            const getIdx = (keywords: string[]) => headers.findIndex(h => keywords.some(k => h.includes(k)));
+            
+            const idx = {
+                nFacture: getIdx(['NRO. DE LA FACTURA', 'NRO FACTURA', 'NUMERO FACTURA', 'Nro. de la Factura']),
+                date: getIdx(['FECHA DE LA FACTURA', 'FECHA FACTURA', 'FECHA']),
+                nit: getIdx(['NIT / CI', 'NIT PROVEEDOR', 'NIT CLIENTE', 'NIT/CI']),
+                nom: getIdx(['NOMBRE O RAZON SOCIAL', 'NOMBRE', 'RAZON SOCIAL', 'NOMBRE O RAZÓN SOCIAL']),
+                total: getIdx(['IMPORTE TOTAL', 'MONTO TOTAL', 'TOTAL DE LA VENTA', 'TOTAL COMPRA']),
+                impot: getIdx(['CREDITO FISCAL', 'DEBITO FISCAL', 'DÉBITO FISCAL', 'CRÉDITO FISCAL']),
+            };
+
             const parsedFactures: Omit<Facture, 'id' | 'createdAt'>[] = [];
             
-            for (let i = 0; i < lines.length; i++) {
-                const parts = lines[i].split(',').map(p => p.trim());
-                if (parts.length < 7) continue; // Skip malformed lines
+            // Start from line 1 if line 0 is a header, else start from 0
+            const startLine = idx.date !== -1 ? 1 : 0;
 
-                const [nFacture, date, nit, fournisseurClient, montantTotalStr, creditDebitFiscalStr, typeStr] = parts;
-                const montantTotal = parseFloat(montantTotalStr) || 0;
-                const creditDebitFiscal = parseFloat(creditDebitFiscalStr) || 0;
-                const type = (typeStr.toLowerCase().includes('achat') ? 'Achat' : 'Vente') as FactureType;
+            for (let i = startLine; i < lines.length; i++) {
+                const parts = lines[i].split(separator).map(p => p.trim().replace(/^"|"$/g, ''));
+                if (parts.length < 3) continue; 
+
+                // Use mapping or defaults
+                const nFacture = idx.nFacture !== -1 ? parts[idx.nFacture] : parts[0];
+                const date = idx.date !== -1 ? parts[idx.date] : parts[1];
+                const nit = idx.nit !== -1 ? parts[idx.nit] : parts[2];
+                const fournisseurClient = idx.nom !== -1 ? parts[idx.nom] : parts[3];
+                
+                // Handle numbers with comma or dot
+                const cleanNum = (val: string) => parseFloat(val.replace(',', '.')) || 0;
+                const montantTotal = idx.total !== -1 ? cleanNum(parts[idx.total]) : cleanNum(parts[4]);
+                const creditDebitFiscal = idx.impot !== -1 ? cleanNum(parts[idx.impot]) : (montantTotal * 0.13); // Default to 13%
+                
+                // Logic to detect if it's Achat or Vente based on headers or content
+                const isVente = headers.some(h => h.includes('VENTA') || h.includes('DEBITO'));
+                const type = (isVente ? 'Vente' : 'Achat') as FactureType;
                 
                 let secteurActivite = "Non catégorisé";
                 let categorieDepense = "Non catégorisée";
 
-                // AI Categorization via local Ollama for Achats
                 if (type === 'Achat') {
                     try {
                         const res = await fetch('/api/ai/categorize', {
@@ -111,7 +144,7 @@ export default function AccountingDashboard() {
                             categorieDepense = aiData.categorieDepense || categorieDepense;
                         }
                     } catch (aiError) {
-                        console.error('AI Categorization failed for row', i, aiError);
+                        console.error('AI Categorization failed', aiError);
                     }
                 }
 
@@ -130,7 +163,10 @@ export default function AccountingDashboard() {
                 });
             }
 
-            // Save to Local API
+            if (parsedFactures.length === 0) {
+                throw new Error("Aucune donnée valide détectée");
+            }
+
             const newFacturesArray = parsedFactures.map(f => ({
                 ...f,
                 id: crypto.randomUUID(),
@@ -143,17 +179,15 @@ export default function AccountingDashboard() {
                 body: JSON.stringify({ factures: newFacturesArray })
             });
 
-            if (!res.ok) {
-                throw new Error("L'API locale a retourné une erreur");
-            }
+            if (!res.ok) throw new Error("Erreur API locale");
 
-            toast({ title: "Import réussi", description: `${parsedFactures.length} factures importées et analysées par l'IA.` });
+            toast({ title: "Import réussi", description: `${parsedFactures.length} factures enregistrées.` });
             setCsvData("");
             await loadFactures();
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast({ variant: "destructive", title: "Erreur d'import", description: "Veuillez vérifier le format du CSV" });
+            toast({ variant: "destructive", title: "Erreur d'import", description: error.message || "Vérifiez le format" });
         } finally {
             setIsImporting(false);
         }
