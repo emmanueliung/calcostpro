@@ -295,3 +295,26 @@ export interface TechnicalSheet {
   createdAt: any;
   updatedAt: any;
 }
+
+// --- ACCOUNTING / SIAT MODULE TYPES ---
+
+export type FactureType = 'Achat' | 'Vente';
+
+export interface Facture {
+  id: string;
+  userId: string;
+  nFacture: string;
+  date: string; // YYYY-MM-DD
+  nit: string;
+  fournisseurClient: string; // Name of supplier or client
+  montantTotal: number;
+  creditDebitFiscal: number; // For Ventes, Débit. For Achats, Crédit.
+  type: FactureType;
+  
+  // AI Generated / Assigned fields
+  secteurActivite?: string; // e.g. from 45 SIAT codes
+  categorieDepense?: string; // e.g. Tissu, Électricité, Loyer
+  
+  status?: 'Imported' | 'Reviewed' | 'Exported'; // Workflow status
+  createdAt: any;
+}
