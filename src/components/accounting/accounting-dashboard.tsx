@@ -274,6 +274,23 @@ export default function AccountingDashboard() {
         }
     };
 
+    const handleDeleteAll = async () => {
+        if (!user || !confirm("Êtes-vous sûr de vouloir supprimer TOUTES vos factures ? Cette action est irréversible.")) return;
+        
+        setIsImporting(true);
+        try {
+            const res = await fetch(`/api/factures?userId=${user.uid}`, { method: 'DELETE' });
+            if (res.ok) {
+                toast({ title: "Données supprimées", description: "Votre historique a été réinitialisé." });
+                setFactures([]);
+            }
+        } catch (error) {
+            toast({ variant: "destructive", title: "Erreur", description: "Échec de la suppression" });
+        } finally {
+            setIsImporting(false);
+        }
+    };
+
     const handleExportRCV = () => {
         if (factures.length === 0) return;
         let csvContent = "data:text/csv;charset=utf-8,Type,N° Facture,Date,NIT,Entité,Total,Base Imponible,IVA\n";
@@ -507,10 +524,15 @@ export default function AccountingDashboard() {
                             placeholder="Copié depuis SIAT ou Excel..."
                         />
                     </CardContent>
-                    <CardFooter>
+                    <CardFooter className="flex flex-col gap-2">
                         <Button onClick={handleImportSIAT} disabled={isImporting || !csvData} className="w-full">
                             {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Importer et Analyser"}
                         </Button>
+                        {factures.length > 0 && (
+                            <Button variant="ghost" className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 text-xs" onClick={handleDeleteAll}>
+                                Vider toutes les données (Reset)
+                            </Button>
+                        )}
                     </CardFooter>
                 </Card>
             </TabsContent>

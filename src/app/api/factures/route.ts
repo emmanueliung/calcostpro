@@ -71,3 +71,33 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }
 }
+
+/**
+ * DELETE: Purge all invoices for a specific user
+ */
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    const snapshot = await db.collection('factures')
+      .where('userId', '==', userId)
+      .get();
+
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting factures from Firestore:', error);
+    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+  }
+}
