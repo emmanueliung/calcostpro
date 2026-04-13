@@ -1,54 +1,67 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { db } from '@/lib/firebase-admin';
 
-// Define the absolute path to the local 'factures' directory
-const FACTURES_DIR = path.join(process.cwd(), 'factures');
-const DB_FILE = path.join(FACTURES_DIR, 'factures-db.json');
-
-// Helper to ensure the directory and file exist
-function initDb() {
-  if (!fs.existsSync(FACTURES_DIR)) {
-    fs.mkdirSync(FACTURES_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify([]), 'utf-8');
-  }
-}
-
+/**
+ * GET: Fetch all invoices for a specific user
+ */
 export async function GET(req: Request) {
   try {
-    initDb();
-    const data = fs.readFileSync(DB_FILE, 'utf-8');
-    const factures = JSON.parse(data);
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    const snapshot = await db.collection('factures')
+      .where('userId', '==', userId)
+      .orderBy('date', 'desc')
+      .get();
+
+    const factures = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
     return NextResponse.json(factures);
   } catch (error: any) {
-    console.error('Error reading local factures:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('Error fetching factures from Firestore:', error);
+    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }
 }
 
+/**
+ * POST: Batch save invoices to Firestore
+ */
 export async function POST(req: Request) {
   try {
-    initDb();
     const body = await req.json();
-    const { factures: newFactures } = body;
+    const { factures } = body;
 
-    if (!Array.isArray(newFactures)) {
-       return NextResponse.json({ error: 'Expected an array of factures' }, { status: 400 });
+    if (!Array.isArray(factures)) {
+      return NextResponse.json({ error: 'Expected an array of factures' }, { status: 400 });
     }
 
-    // Read current data
-    const data = fs.readFileSync(DB_FILE, 'utf-8');
-    const currentFactures = JSON.parse(data);
+    const batch = db.batch();
+    const collectionRef = db.collection('factures');
 
-    // Merge and save
-    const updatedFactures = [...currentFactures, ...newFactures];
-    fs.writeFileSync(DB_FILE, JSON.stringify(updatedFactures, null, 2), 'utf-8');
+    factures.forEach((facture: any) => {
+      // Use existing ID if provided, otherwise generate one
+      const docId = facture.id || crypto.randomUUID();
+      const docRef = collectionRef.doc(docId);
+      
+      // Ensure we don't overwrite if it exists, or just set it
+      batch.set(docRef, {
+        ...facture,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    });
 
-    return NextResponse.json({ success: true, count: updatedFactures.length });
+    await batch.commit();
+
+    return NextResponse.json({ success: true, count: factures.length });
   } catch (error: any) {
-    console.error('Error saving local factures:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('Error saving factures to Firestore:', error);
+    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }
 }
