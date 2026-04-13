@@ -13,21 +13,23 @@ export async function POST(req: Request) {
 
     const prompt = `Tu es un expert comptable en Bolivie (système SIAT).
 L'entreprise opère dans la "Confection Textile" et le "Développement Web".
-Je te donne le nom d'un fournisseur issu d'une facture.
-Analyse le nom "${supplierName}" et réponds strictement au format JSON avec ces 4 clés :
-1. "secteurActivite" : Le secteur d'activité du fournisseur (ex: Électricité, Textile, Informatique, Carburant, Alimentation).
-2. "categorieDepense" : Ce qui est probablement acheté (ex: Matière première, Logiciel, Énergie).
-3. "isDeductible" : Booléen (true/false) - Est-ce un coût nécessaire et déductible pour une entreprise de textile ou de développement web ?
-4. "deductibilityReason" : Courte phrase en français expliquant ton choix (ex: "Considéré comme matière première indispensable" ou "Généralement une dépense personnelle non déductible").
+Analyse le nom "${supplierName}" et réponds strictement au format JSON avec ces clés :
+1. "secteurActivite" : (ex: Électricité, Textile, Informatique, Carburant, Télécoms).
+2. "isDeductible" : true/false.
+3. "deductibilityReason" : Courte explication.
+4. "rule" : Utilise l'une de ces valeurs : "GENERAL", "FUEL_70", "ELEC_EXEMPT".
 
-Note : En Bolivie, l'essence ("Gasolina") est déductible mais possède une règle spéciale (70%). Marque-la comme true si c'est du carburant.
+Règles spéciales à détecter par mot-clé :
+- Surtel, Entel, Tigo, Viva -> Secteur: Télécoms, rule: GENERAL.
+- Gasolinera, Surtidor, YPBF -> Secteur: Carburant, rule: FUEL_70.
+- ELFEC, Delapaz, CRE -> Secteur: Électricité, rule: ELEC_EXEMPT.
 
-Format JSON strict :
+Format JSON :
 {
   "secteurActivite": "...",
-  "categorieDepense": "...",
-  "isDeductible": true/false,
-  "deductibilityReason": "..."
+  "isDeductible": true,
+  "deductibilityReason": "...",
+  "rule": "..."
 }`;
 
     const ollamaPayload = {

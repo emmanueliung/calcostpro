@@ -308,6 +308,7 @@ export interface Facture {
   nit: string;
   fournisseurClient: string; // Name of supplier or client
   montantTotal: number;
+  baseImposable: number; // The amount used for 13% IVA calculation
   creditDebitFiscal: number; // For Ventes, Débit. For Achats, Crédit.
   type: FactureType;
   
