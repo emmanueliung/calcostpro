@@ -235,7 +235,11 @@ export default function AccountingDashboard() {
                     } catch (e) {}
                 }
 
+                const cleanId = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '');
+                const stableId = `${type.toLowerCase()}-${cleanId(nit)}-${cleanId(nFacture)}`;
+
                 parsedFactures.push({
+                    id: stableId,
                     userId: user.uid,
                     nFacture,
                     date,
@@ -249,13 +253,13 @@ export default function AccountingDashboard() {
                     isDeductible,
                     deductibilityReason,
                     status: 'Imported'
-                });
+                } as Facture);
             }
 
             const res = await fetch('/api/factures', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ factures: parsedFactures.map(f => ({ ...f, id: crypto.randomUUID(), createdAt: new Date().toISOString() })) })
+                body: JSON.stringify({ factures: parsedFactures.map(f => ({ ...f, createdAt: new Date().toISOString() })) })
             });
 
             if (res.ok) {

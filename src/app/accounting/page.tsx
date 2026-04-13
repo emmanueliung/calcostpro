@@ -12,18 +12,20 @@ const ENTERPRISE_USERS = [
 ];
 
 export default function AccountingPage() {
-    const { user } = useUser();
+    const { user, isUserLoading } = useUser();
     const router = useRouter();
 
     useEffect(() => {
+        if (isUserLoading) return; // Wait for Firebase to determine auth state
+        
         const isEnterprise = user?.email && ENTERPRISE_USERS.includes(user.email);
         if (!user || !isEnterprise) {
             router.push("/login");
         }
-    }, [user, router]);
+    }, [user, isUserLoading, router]);
 
-    if (!user) {
-        return <div className="p-8 flex justify-center items-center h-full">Cargando...</div>;
+    if (isUserLoading || !user) {
+        return <div className="p-8 flex justify-center items-center h-full min-h-screen">Cargando...</div>;
     }
 
     const isEnterprise = user.email && ENTERPRISE_USERS.includes(user.email);
