@@ -15,13 +15,19 @@ export async function GET(req: Request) {
 
     const snapshot = await db.collection('factures')
       .where('userId', '==', userId)
-      .orderBy('date', 'desc')
       .get();
 
     const factures = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    }));
+    })) as any[];
+
+    // Sort manually in Memory to avoid "Missing Index" error on Firestore
+    factures.sort((a, b) => {
+        const dateA = a.date || "";
+        const dateB = b.date || "";
+        return dateB.localeCompare(dateA); // Descending
+    });
 
     return NextResponse.json(factures);
   } catch (error: any) {
