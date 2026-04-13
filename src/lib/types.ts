@@ -314,6 +314,9 @@ export interface Facture {
   // AI Generated / Assigned fields
   secteurActivite?: string; // e.g. from 45 SIAT codes
   categorieDepense?: string; // e.g. Tissu, Électricité, Loyer
+  isDeductible?: boolean;
+  deductibilityReason?: string;
+  isFuel?: boolean; // Bolivian specific: 70% tax credit reduction
   
   status?: 'Imported' | 'Reviewed' | 'Exported'; // Workflow status
   createdAt: any;

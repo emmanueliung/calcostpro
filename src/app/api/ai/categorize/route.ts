@@ -12,17 +12,22 @@ export async function POST(req: Request) {
     }
 
     const prompt = `Tu es un expert comptable en Bolivie (système SIAT).
-Je te donne le nom d'un fournisseur ou d'un client issu de la facturation d'une entreprise de confection textile.
-Ton rôle est d'analyser le nom et de deviner de manière pertinente :
-1. "Secteur", qui correspond au secteur d'activité (limite-toi à un secteur logique parmi les secteurs génériques).
-2. "Categorie", qui correspond à la catégorie de dépense ou recette (ex: Tissu, Accessoires, Électricité, Loyer, Main d'oeuvre, Matériel de bureau, Frais généraux, Ventes).
+L'entreprise opère dans la "Confection Textile" et le "Développement Web".
+Je te donne le nom d'un fournisseur issu d'une facture.
+Analyse le nom "${supplierName}" et réponds strictement au format JSON avec ces 4 clés :
+1. "secteurActivite" : Le secteur d'activité du fournisseur (ex: Électricité, Textile, Informatique, Carburant, Alimentation).
+2. "categorieDepense" : Ce qui est probablement acheté (ex: Matière première, Logiciel, Énergie).
+3. "isDeductible" : Booléen (true/false) - Est-ce un coût nécessaire et déductible pour une entreprise de textile ou de développement web ?
+4. "deductibilityReason" : Courte phrase en français expliquant ton choix (ex: "Considéré comme matière première indispensable" ou "Généralement une dépense personnelle non déductible").
 
-Nom du fournisseur/client : "${supplierName}"
+Note : En Bolivie, l'essence ("Gasolina") est déductible mais possède une règle spéciale (70%). Marque-la comme true si c'est du carburant.
 
-Réponds UNIQUEMENT au format JSON strict avec la structure suivante, sans aucun autre texte (pas de markdown en dehors du bloc json):
+Format JSON strict :
 {
   "secteurActivite": "...",
-  "categorieDepense": "..."
+  "categorieDepense": "...",
+  "isDeductible": true/false,
+  "deductibilityReason": "..."
 }`;
 
     const ollamaPayload = {

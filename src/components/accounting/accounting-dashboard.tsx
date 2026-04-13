@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/firebase";
 import { Facture, FactureType } from "@/lib/types";
-import { Loader2, UploadCloud, DownloadCloud, Brain, FileSpreadsheet, Building2, Receipt, TrendingDown, TrendingUp, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, UploadCloud, DownloadCloud, Brain, FileSpreadsheet, Building2, Receipt, TrendingDown, TrendingUp, AlertCircle, CheckCircle2, PlusCircle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -32,188 +32,92 @@ export default function AccountingDashboard() {
     const [csvData, setCsvData] = useState("");
     const [isImporting, setIsImporting] = useState(false);
     
+    // Manual Entry State
+    const [manualEntry, setManualEntry] = useState({
+        fournisseur: "",
+        montant: "",
+        date: new Date().toISOString().split('T')[0],
+        isFuel: false
+    });
+    const [aiSuggestion, setAiSuggestion] = useState<{isDeductible?: boolean, reason?: string, loading: boolean}>({ loading: false });
+
     // Derived State
     const totalAchats = factures.filter(f => f.type === 'Achat').reduce((sum, f) => sum + f.montantTotal, 0);
     const totalVentes = factures.filter(f => f.type === 'Vente').reduce((sum, f) => sum + f.montantTotal, 0);
-    const creditFiscal = factures.filter(f => f.type === 'Achat').reduce((sum, f) => sum + f.creditDebitFiscal, 0);
-    const debitFiscal = factures.filter(f => f.type === 'Vente').reduce((sum, f) => sum + f.creditDebitFiscal, 0);
-    const ivaPayable = Math.max(0, debitFiscal - creditFiscal);
     
-    // Chart Data
-    const sectorData = factures.reduce((acc, f) => {
-        if (f.type === 'Achat' && f.secteurActivite) {
-            const existing = acc.find(item => item.name === f.secteurActivite);
-            if (existing) {
-                existing.value += f.montantTotal;
-            } else {
-                acc.push({ name: f.secteurActivite, value: f.montantTotal });
-            }
-        }
-        return acc;
-    }, [] as {name: string, value: number}[]).sort((a,b) => b.value - a.value).slice(0, 5);
+    // Updated Credit Fiscal calculation for Bolivia
+    const creditFiscal = factures.filter(f => f.type === 'Achat').reduce((sum, f) => {
+        const base = f.isFuel ? f.montantTotal * 0.7 : f.montantTotal;
+        return sum + (base * 0.13); // Bolivian IVA is 13%
+    }, 0);
 
-    useEffect(() => {
-        if (user) {
-            loadFactures();
-        }
-    }, [user]);
+    const debitFiscal = factures.filter(f => f.type === 'Vente').reduce((sum, f) => sum + (f.montantTotal * 0.13), 0);
+    const ivaPayable = Math.max(0, debitFiscal - creditFiscal);
 
-    const loadFactures = async () => {
-        if (!user) return;
-        setLoading(true);
-        try {
-            const res = await fetch('/api/factures');
-            if (res.ok) {
-                let data: Facture[] = await res.json();
-                // Filter locally by user
-                data = data.filter(f => f.userId === user.uid);
-                setFactures(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-            }
-        } catch (error) {
-            console.error(error);
-            toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les factures" });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleImportSIAT = async () => {
-        if (!csvData.trim() || !user) return;
+    const handleManualSubmit = async () => {
+        if (!manualEntry.fournisseur || !manualEntry.montant || !user) return;
+        
         setIsImporting(true);
         try {
-            const lines = csvData.trim().split('\n');
-            if (lines.length < 1) return;
+            const montant = parseFloat(manualEntry.montant);
+            const baseImposable = manualEntry.isFuel ? montant * 0.7 : montant;
 
-            // Detect separator (comma, semicolon or tab)
-            const firstLine = lines[0];
-            let separator = ",";
-            if (firstLine.includes(';')) separator = ";";
-            else if (firstLine.includes('\t')) separator = "\t";
-
-            const headers = lines[0].split(separator).map(h => h.trim().toUpperCase());
-            
-            // Map headers to indices
-            const getIdx = (keywords: string[]) => headers.findIndex(h => keywords.some(k => h.includes(k)));
-            
-            const idx = {
-                nFacture: getIdx(['NRO. DE LA FACTURA', 'NRO FACTURA', 'NUMERO FACTURA', 'Nro. de la Factura']),
-                date: getIdx(['FECHA DE LA FACTURA', 'FECHA FACTURA', 'FECHA']),
-                nit: getIdx(['NIT / CI', 'NIT PROVEEDOR', 'NIT CLIENTE', 'NIT/CI']),
-                nom: getIdx(['NOMBRE O RAZON SOCIAL', 'NOMBRE', 'RAZON SOCIAL', 'NOMBRE O RAZÓN SOCIAL']),
-                total: getIdx(['IMPORTE TOTAL', 'MONTO TOTAL', 'TOTAL DE LA VENTA', 'TOTAL COMPRA']),
-                impot: getIdx(['CREDITO FISCAL', 'DEBITO FISCAL', 'DÉBITO FISCAL', 'CRÉDITO FISCAL']),
-            };
-
-            const parsedFactures: Omit<Facture, 'id' | 'createdAt'>[] = [];
-            
-            // Start from line 1 if line 0 is a header, else start from 0
-            const startLine = idx.date !== -1 ? 1 : 0;
-
-            for (let i = startLine; i < lines.length; i++) {
-                const parts = lines[i].split(separator).map(p => p.trim().replace(/^"|"$/g, ''));
-                if (parts.length < 3) continue; 
-
-                // Use mapping or defaults
-                const nFacture = idx.nFacture !== -1 ? parts[idx.nFacture] : parts[0];
-                const date = idx.date !== -1 ? parts[idx.date] : parts[1];
-                const nit = idx.nit !== -1 ? parts[idx.nit] : parts[2];
-                const fournisseurClient = idx.nom !== -1 ? parts[idx.nom] : parts[3];
-                
-                // Handle numbers with comma or dot
-                const cleanNum = (val: string) => parseFloat(val.replace(',', '.')) || 0;
-                const montantTotal = idx.total !== -1 ? cleanNum(parts[idx.total]) : cleanNum(parts[4]);
-                const creditDebitFiscal = idx.impot !== -1 ? cleanNum(parts[idx.impot]) : (montantTotal * 0.13); // Default to 13%
-                
-                // Logic to detect if it's Achat or Vente based on headers or content
-                const isVente = headers.some(h => h.includes('VENTA') || h.includes('DEBITO'));
-                const type = (isVente ? 'Vente' : 'Achat') as FactureType;
-                
-                let secteurActivite = "Non catégorisé";
-                let categorieDepense = "Non catégorisée";
-
-                if (type === 'Achat') {
-                    try {
-                        const res = await fetch('/api/ai/categorize', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ supplierName: fournisseurClient })
-                        });
-                        if (res.ok) {
-                            const aiData = await res.json();
-                            secteurActivite = aiData.secteurActivite || secteurActivite;
-                            categorieDepense = aiData.categorieDepense || categorieDepense;
-                        }
-                    } catch (aiError) {
-                        console.error('AI Categorization failed', aiError);
-                    }
-                }
-
-                parsedFactures.push({
-                    userId: user.uid,
-                    nFacture,
-                    date,
-                    nit,
-                    fournisseurClient,
-                    montantTotal,
-                    creditDebitFiscal,
-                    type,
-                    secteurActivite,
-                    categorieDepense,
-                    status: 'Imported'
-                });
-            }
-
-            if (parsedFactures.length === 0) {
-                throw new Error("Aucune donnée valide détectée");
-            }
-
-            const newFacturesArray = parsedFactures.map(f => ({
-                ...f,
+            const newFacture: Facture = {
                 id: crypto.randomUUID(),
+                userId: user.uid,
+                nFacture: "MANU-" + Date.now().toString().slice(-6),
+                date: manualEntry.date,
+                nit: "0",
+                fournisseurClient: manualEntry.fournisseur,
+                montantTotal: montant,
+                creditDebitFiscal: baseImposable * 0.13,
+                type: 'Achat',
+                isFuel: manualEntry.isFuel,
+                isDeductible: aiSuggestion.isDeductible,
+                deductibilityReason: aiSuggestion.reason,
+                status: 'Reviewed',
                 createdAt: new Date().toISOString()
-            }));
+            };
 
             const res = await fetch('/api/factures', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ factures: newFacturesArray })
+                body: JSON.stringify({ factures: [newFacture] })
             });
 
-            if (!res.ok) throw new Error("Erreur API locale");
-
-            toast({ title: "Import réussi", description: `${parsedFactures.length} factures enregistrées.` });
-            setCsvData("");
-            await loadFactures();
-
-        } catch (error: any) {
-            console.error(error);
-            toast({ variant: "destructive", title: "Erreur d'import", description: error.message || "Vérifiez le format" });
+            if (res.ok) {
+                toast({ title: "Saisie enregistrée", description: "La facture a été ajoutée manuellement." });
+                setManualEntry({ fournisseur: "", montant: "", date: new Date().toISOString().split('T')[0], isFuel: false });
+                setAiSuggestion({ loading: false });
+                await loadFactures();
+            }
+        } catch (error) {
+            toast({ variant: "destructive", title: "Erreur", description: "Impossible de sauvegarder" });
         } finally {
             setIsImporting(false);
         }
     };
 
-    const handleExportRCV = () => {
-        if (factures.length === 0) {
-            toast({ title: "Rien à exporter", description: "Aucune facture disponible." });
-            return;
+    const getAiSuggestion = async () => {
+        if (!manualEntry.fournisseur) return;
+        setAiSuggestion(prev => ({ ...prev, loading: true }));
+        try {
+            const res = await fetch('/api/ai/categorize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ supplierName: manualEntry.fournisseur })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setAiSuggestion({
+                    isDeductible: data.isDeductible,
+                    reason: data.deductibilityReason,
+                    loading: false
+                });
+            }
+        } catch (e) {
+            setAiSuggestion(prev => ({ ...prev, loading: false }));
         }
-        
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Type,N° Facture,Date,NIT,Fournisseur/Client,Montant Total,Crédit/Débit Fiscal,Secteur,Catégorie\n";
-        
-        factures.forEach(f => {
-            const row = [f.type, f.nFacture, f.date, f.nit, `"${f.fournisseurClient}"`, f.montantTotal, f.creditDebitFiscal, `"${f.secteurActivite || ''}"`, `"${f.categorieDepense || ''}"`];
-            csvContent += row.join(",") + "\n";
-        });
-        
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `Export_RCV_${new Date().getTime()}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     };
 
     if (loading && factures.length === 0) {
@@ -222,10 +126,11 @@ export default function AccountingDashboard() {
 
     return (
         <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+            <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="manual">Saisie Manuelle</TabsTrigger>
                 <TabsTrigger value="import">Import SIAT</TabsTrigger>
-                <TabsTrigger value="liste">Liste Complète</TabsTrigger>
+                <TabsTrigger value="liste">Liste</TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard" className="space-y-6">
@@ -236,7 +141,7 @@ export default function AccountingDashboard() {
                             <TrendingUp className="w-4 h-4 text-emerald-500" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-emerald-700">{totalVentes.toFixed(2)} Bs</div>
+                            <div className="text-2xl font-bold text-emerald-700">{totalVentes.toLocaleString('es-BO', { minimumFractionDigits: 2 })} Bs</div>
                             <p className="text-xs text-muted-foreground mt-1">Débit Fiscal: {debitFiscal.toFixed(2)} Bs</p>
                         </CardContent>
                     </Card>
@@ -246,7 +151,7 @@ export default function AccountingDashboard() {
                             <TrendingDown className="w-4 h-4 text-red-500" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{totalAchats.toFixed(2)} Bs</div>
+                            <div className="text-2xl font-bold">{totalAchats.toLocaleString('es-BO', { minimumFractionDigits: 2 })} Bs</div>
                             <p className="text-xs text-muted-foreground mt-1">Crédit Fiscal: {creditFiscal.toFixed(2)} Bs</p>
                         </CardContent>
                     </Card>
@@ -269,7 +174,7 @@ export default function AccountingDashboard() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{factures.length}</div>
-                            <p className="text-xs text-muted-foreground mt-1 text-purple-600/80">Catégorisées par IA</p>
+                            <p className="text-xs text-muted-foreground mt-1 text-purple-600/80">Analysées par Gemma</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -315,15 +220,123 @@ export default function AccountingDashboard() {
                                 </div>
                             </Button>
                             <Button variant="outline" className="w-full justify-start h-14" onClick={() => {
-                                const tabTrigger = document.querySelector('[value="import"]') as HTMLElement;
+                                const tabTrigger = document.querySelector('[value="manual"]') as HTMLElement;
                                 if (tabTrigger) tabTrigger.click();
                             }}>
-                                <UploadCloud className="mr-3 h-5 w-5 text-blue-500" />
+                                <PlusCircle className="mr-3 h-5 w-5 text-primary" />
                                 <div className="flex flex-col items-start">
-                                    <span className="font-semibold">Importer de nouvelles données</span>
-                                    <span className="text-xs text-muted-foreground font-normal">Copier-coller depuis le SIAT</span>
+                                    <span className="font-semibold">Saisie Manuelle Rapide</span>
+                                    <span className="text-xs text-muted-foreground font-normal">Essence, loyer, frais divers</span>
                                 </div>
                             </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            </TabsContent>
+
+            <TabsContent value="manual">
+                <div className="grid gap-6 md:grid-cols-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Nouvelle Saisie Directe</CardTitle>
+                            <CardDescription>Entrez vos factures du quotidien qui n'ont pas encore été exportées du SIAT.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Nom du Fournisseur</label>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        placeholder="Ex: YPFB, Viva, Supermercado..."
+                                        value={manualEntry.fournisseur}
+                                        onChange={(e) => setManualEntry({ ...manualEntry, fournisseur: e.target.value })}
+                                        onBlur={getAiSuggestion}
+                                    />
+                                    <Button variant="ghost" size="icon" onClick={getAiSuggestion} disabled={aiSuggestion.loading}>
+                                        <Brain className={`h-4 w-4 ${aiSuggestion.loading ? 'animate-pulse text-purple-500' : 'text-muted-foreground'}`} />
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Montant Total (Bs)</label>
+                                    <input 
+                                        type="number" 
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        placeholder="0.00"
+                                        value={manualEntry.montant}
+                                        onChange={(e) => setManualEntry({ ...manualEntry, montant: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Date</label>
+                                    <input 
+                                        type="date" 
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={manualEntry.date}
+                                        onChange={(e) => setManualEntry({ ...manualEntry, date: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center space-x-2 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                                <input 
+                                    type="checkbox" 
+                                    id="isFuel" 
+                                    className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                                    checked={manualEntry.isFuel}
+                                    onChange={(e) => setManualEntry({ ...manualEntry, isFuel: e.target.checked })}
+                                />
+                                <label htmlFor="isFuel" className="text-sm font-medium text-amber-900 cursor-pointer">
+                                    C'est une facture de carburant (Essence/Gasoil) ?
+                                    <span className="block text-[10px] font-normal text-amber-700">Applique la règle bolivienne de base imposable à 70%</span>
+                                </label>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button className="w-full" onClick={handleManualSubmit} disabled={isImporting || !manualEntry.fournisseur}>
+                                {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                                Enregistrer la Facture
+                            </Button>
+                        </CardFooter>
+                    </Card>
+
+                    <Card className={`border-2 transition-colors ${aiSuggestion.isDeductible === true ? 'border-emerald-200 bg-emerald-50/30' : aiSuggestion.isDeductible === false ? 'border-red-200 bg-red-50/30' : 'border-dashed'}`}>
+                        <CardHeader>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <Brain className="h-5 w-5 text-purple-500" />
+                                Analyse d'Intelligence Fiscale
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {aiSuggestion.loading ? (
+                                <div className="space-y-4 animate-pulse">
+                                    <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                                    <div className="h-20 bg-slate-200 rounded w-full"></div>
+                                </div>
+                            ) : aiSuggestion.isDeductible !== undefined ? (
+                                <>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant={aiSuggestion.isDeductible ? 'default' : 'destructive'} className={aiSuggestion.isDeductible ? 'bg-emerald-500' : 'bg-red-500'}>
+                                            {aiSuggestion.isDeductible ? 'DÉDUCTIBLE' : 'NON DÉDUCTIBLE'}
+                                        </Badge>
+                                        <span className="text-sm font-medium text-slate-600">Suggestion Gemma</span>
+                                    </div>
+                                    <p className="text-sm text-slate-700 leading-relaxed font-medium italic">
+                                        "{aiSuggestion.reason}"
+                                    </p>
+                                    <div className="p-3 rounded bg-white/50 text-[11px] text-muted-foreground border border-slate-100">
+                                        Cette analyse tient compte de vos secteurs : <strong>Confection Textile</strong> & <strong>Développement Web</strong>.
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="h-40 flex flex-col items-center justify-center text-center text-muted-foreground text-sm px-10">
+                                    <AlertCircle className="h-8 w-8 mb-2 opacity-20" />
+                                    Entrez un nom de fournisseur pour que Gemma analyse la déductibilité.
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -381,7 +394,7 @@ export default function AccountingDashboard() {
                                         <TableHead>N° Facture</TableHead>
                                         <TableHead>Date</TableHead>
                                         <TableHead>Tier (Fournisseur/Client)</TableHead>
-                                        <TableHead>Secteur / Categorie (IA)</TableHead>
+                                        <TableHead>Déductible (IA)</TableHead>
                                         <TableHead className="text-right">Total (Bs)</TableHead>
                                         <TableHead className="text-right">Crédit/Débit (Bs)</TableHead>
                                     </TableRow>
@@ -397,21 +410,32 @@ export default function AccountingDashboard() {
                                                 <TableCell>
                                                     <Badge variant={facture.type === 'Achat' ? 'secondary' : 'default'} className={facture.type === 'Achat' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'}>
                                                         {facture.type}
+                                                        {facture.isFuel && ' ⛽'}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="font-mono text-xs">{facture.nFacture}</TableCell>
                                                 <TableCell>{facture.date}</TableCell>
                                                 <TableCell className="font-medium">{facture.fournisseurClient}</TableCell>
                                                 <TableCell>
-                                                    {facture.type === 'Achat' ? (
-                                                       <div className="flex flex-col gap-1">
-                                                            <span className="text-xs font-semibold text-slate-700">{facture.secteurActivite}</span>
-                                                            <span className="text-[10px] text-muted-foreground truncate max-w-[150px]" title={facture.categorieDepense}>{facture.categorieDepense}</span>
-                                                       </div>
+                                                    {facture.isDeductible !== undefined ? (
+                                                        <div className="flex flex-col gap-1">
+                                                            <div className="flex items-center gap-1">
+                                                                {facture.isDeductible ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <AlertCircle className="h-3 w-3 text-red-500" />}
+                                                                <span className={`text-[10px] font-bold ${facture.isDeductible ? 'text-emerald-700' : 'text-red-700'}`}>
+                                                                    {facture.isDeductible ? 'OUI' : 'NON'}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-[10px] text-muted-foreground italic truncate max-w-[120px]" title={facture.deductibilityReason}>
+                                                                {facture.deductibilityReason}
+                                                            </span>
+                                                        </div>
                                                     ) : '-'}
                                                 </TableCell>
                                                 <TableCell className="text-right font-medium">{facture.montantTotal.toFixed(2)}</TableCell>
-                                                <TableCell className="text-right font-medium text-muted-foreground">{facture.creditDebitFiscal.toFixed(2)}</TableCell>
+                                                <TableCell className="text-right font-medium text-muted-foreground">
+                                                    {facture.creditDebitFiscal.toFixed(2)}
+                                                    {facture.isFuel && <span className="block text-[8px] font-normal">(70% Base)</span>}
+                                                </TableCell>
                                             </TableRow>
                                         ))
                                     )}
