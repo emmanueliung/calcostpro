@@ -46,19 +46,39 @@ export default function AccountingDashboard() {
     const totalAchats = factures.filter(f => f.type === 'Achat').reduce((sum, f) => sum + f.montantTotal, 0);
     const totalVentes = factures.filter(f => f.type === 'Vente').reduce((sum, f) => sum + f.montantTotal, 0);
     
-    // Exact Bolivian Credit Fiscal Calculation
+    // Exact Bolivian Credit Fiscal Calculation (IVA)
     const creditFiscal = factures.filter(f => f.type === 'Achat').reduce((sum, f) => {
-        // Use either the stored baseImposable or fall back to montantTotal (with 70% rule if isFuel)
+        // We use the baseImposable if available (calculated as 70% for fuel or 13% derived for SIAT imports)
+        // If not available, we apply general rule (100% of montant)
         const base = f.baseImposable || (f.isFuel ? f.montantTotal * 0.7 : f.montantTotal);
         return sum + (base * 0.13); 
     }, 0);
 
     const debitFiscal = factures.filter(f => f.type === 'Vente').reduce((sum, f) => {
-        const base = f.baseImposable || f.montantTotal;
-        return sum + (base * 0.13);
+        return sum + (f.montantTotal * 0.13);
     }, 0);
 
     const ivaPayable = Math.max(0, debitFiscal - creditFiscal);
+
+    // Initial Load
+    const loadFactures = async () => {
+        if (!user) return;
+        try {
+            const res = await fetch(`/api/factures?userId=${user.uid}`);
+            if (res.ok) {
+                const data = await res.json();
+                setFactures(data);
+            }
+        } catch (e) {
+            console.error("Failed to load factures", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user) loadFactures();
+    }, [user]);
 
     const handleManualSubmit = async () => {
         const montant = parseFloat(manualEntry.montant);
