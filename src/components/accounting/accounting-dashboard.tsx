@@ -298,8 +298,8 @@ export default function AccountingDashboard() {
                 
                 // For SIAT imports, the SIAT already provides the Credit/Debit Fiscal. 
                 // We divide by 0.13 to get the baseImposable.
-                const creditDebitFiscal = idx.impot !== -1 ? cleanNum(parts[idx.impot]) : (montantTotal * 0.13);
-                const baseImposable = creditDebitFiscal / 0.13;
+                let creditDebitFiscal = idx.impot !== -1 ? cleanNum(parts[idx.impot]) : (montantTotal * 0.13);
+                let baseImposable = creditDebitFiscal / 0.13;
                 
                 const isVente = headers.some(h => h.includes('VENTA') || h.includes('DEBITO'));
                 const type = (isVente ? 'Vente' : 'Achat') as FactureType;
@@ -322,6 +322,7 @@ export default function AccountingDashboard() {
                             isFuel = aiData.rule === "FUEL_70";
                             if (isFuel) {
                                 baseImposable = montantTotal * 0.7;
+                                creditDebitFiscal = baseImposable * 0.13;
                             }
                         }
                     } catch (e) {}
