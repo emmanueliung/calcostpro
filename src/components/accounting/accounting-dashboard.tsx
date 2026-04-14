@@ -484,7 +484,7 @@ export default function AccountingDashboard() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{totalAchats.toLocaleString('es-BO', { minimumFractionDigits: 2 })} Bs</div>
-                            <p className="text-xs text-muted-foreground mt-1">Crédit Fiscal: {creditFiscal.toLocaleString('es-BO', { minimumFractionDigits: 2 })} Bs</p>
+                            <p className="text-xs text-muted-foreground mt-1">Crédit Fiscal: {creditFiscalCurrent.toLocaleString('es-BO', { minimumFractionDigits: 2 })} Bs</p>
                         </CardContent>
                     </Card>
                     <Card className="bg-primary/5 backdrop-blur-sm border-primary/20 shadow-sm">
