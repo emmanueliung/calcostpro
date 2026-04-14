@@ -52,8 +52,23 @@ export default function AccountingDashboard() {
     });
     const [aiSuggestion, setAiSuggestion] = useState<{isDeductible?: boolean, reason?: string, rule?: string, loading: boolean}>({ loading: false });
 
+    // Helper to normalize any date string to YYYY-MM
+    const getFactureMonth = (dateStr: string) => {
+        if (!dateStr) return '';
+        // Handle DD/MM/YYYY (SIAT)
+        if (dateStr.includes('/')) {
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+                return `${year}-${parts[1].padStart(2, '0')}`;
+            }
+        }
+        // Handle YYYY-MM-DD (Manual)
+        return dateStr.slice(0, 7);
+    };
+
     // Derived State - Filtering by selected month
-    const filteredFactures = factures.filter(f => f.date.startsWith(selectedMonth));
+    const filteredFactures = factures.filter(f => getFactureMonth(f.date) === selectedMonth);
     
     const totalAchats = filteredFactures.filter(f => f.type === 'Achat').reduce((sum, f) => sum + f.montantTotal, 0);
     const totalVentes = filteredFactures.filter(f => f.type === 'Vente').reduce((sum, f) => sum + f.montantTotal, 0);
