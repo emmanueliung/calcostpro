@@ -37,6 +37,10 @@ export default function AccountingDashboard() {
     // Import State
     const [csvData, setCsvData] = useState("");
     const [isImporting, setIsImporting] = useState(false);
+    const [isFetchingUfv, setIsFetchingUfv] = useState(false);
+
+    // List of months with data for easier navigation
+    const monthsWithData = Array.from(new Set(factures.map(f => f.date.slice(0, 7)))).sort();
     
     // Manual Entry State
     const [manualEntry, setManualEntry] = useState({
@@ -158,6 +162,25 @@ export default function AccountingDashboard() {
             toast({ variant: "destructive", title: "Erreur", description: "Échec de sauvegarde du solde" });
         } finally {
             setIsSavingSaldo(false);
+        }
+    };
+
+    const fetchUfv = async (type: 'prev' | 'current') => {
+        setIsFetchingUfv(true);
+        try {
+            // Note: CUCU API returns latest. 
+            const res = await fetch('https://bcb.cucu.bo/api/v1/tc/ufv');
+            if (res.ok) {
+                const data = await res.json();
+                const valor = typeof data.valor === 'number' ? data.valor : parseFloat(data.valor);
+                if (type === 'current') setUfvData(prev => ({ ...prev, current: valor }));
+                else setUfvData(prev => ({ ...prev, prev: valor }));
+                toast({ title: "UFV récupérée", description: `Valeur: ${valor} (${data.fecha})` });
+            }
+        } catch (e) {
+            toast({ variant: "destructive", title: "Erreur", description: "Impossible de contacter l'API UFV" });
+        } finally {
+            setIsFetchingUfv(false);
         }
     };
 
@@ -441,7 +464,12 @@ export default function AccountingDashboard() {
                             />
                         </div>
                         <div className="flex-1 space-y-1">
-                            <label className="text-[10px] font-bold text-muted-foreground uppercase text-primary/70">UFV Fin Mois Actuel</label>
+                            <div className="flex justify-between items-center">
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase text-primary/70">UFV Fin Mois Actuel</label>
+                                <button onClick={() => fetchUfv('current')} className="text-[9px] text-primary hover:underline flex items-center gap-1">
+                                    {isFetchingUfv ? <Loader2 className="h-2 w-2 animate-spin" /> : <DownloadCloud className="h-2 w-2" />} Auto
+                                </button>
+                            </div>
                             <input 
                                 type="number" step="0.00001"
                                 className="w-full p-2 border rounded text-xs bg-slate-50"
@@ -487,7 +515,12 @@ export default function AccountingDashboard() {
                             <p className="text-xs text-muted-foreground mt-1">Crédit Fiscal: {creditFiscalCurrent.toLocaleString('es-BO', { minimumFractionDigits: 2 })} Bs</p>
                         </CardContent>
                     </Card>
-                    <Card className="bg-primary/5 backdrop-blur-sm border-primary/20 shadow-sm">
+                    <Card className="bg-primary/5 backdrop-blur-sm border-primary/20 shadow-sm relative overflow-hidden">
+                        {filteredFactures.length === 0 && factures.length > 0 && (
+                            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-10">
+                                <p className="text-[10px] font-bold text-primary animate-pulse uppercase px-4 text-center">Pas de données pour cette période</p>
+                            </div>
+                        )}
                         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                             <CardTitle className="text-sm font-medium text-primary">NET à payer au SIN (IVA)</CardTitle>
                             {ivaPayable > 0 ? <AlertCircle className="w-4 h-4 text-primary" /> : <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
@@ -495,7 +528,7 @@ export default function AccountingDashboard() {
                         <CardContent>
                             <div className={`text-2xl font-bold ${ivaPayable > 0 ? 'text-primary' : 'text-emerald-600'}`}>{ivaPayable.toLocaleString('es-BO', { minimumFractionDigits: 2 })} Bs</div>
                             <p className="text-xs text-muted-foreground mt-1 text-slate-500">
-                                {ivaPayable === 0 ? "Crédit reportable au mois prochain" : "Montant effectif à payer"}
+                                {ivaPayable === 0 ? `Crédit reporté : ${nextMonthSaldo.toFixed(2)} Bs` : "Montant effectif à payer au SIN"}
                             </p>
                         </CardContent>
                     </Card>
