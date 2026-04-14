@@ -322,3 +322,12 @@ export interface Facture {
   status?: 'Imported' | 'Reviewed' | 'Exported'; // Workflow status
   createdAt: any;
 }
+
+export interface SaldoFavor {
+  userId: string;
+  month: string; // YYYY-MM
+  saldo: number;
+  ufvPrevious: number;
+  ufvCurrent: number;
+  updatedAt: string;
+}

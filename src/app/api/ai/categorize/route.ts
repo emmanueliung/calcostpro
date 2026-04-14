@@ -48,16 +48,16 @@ Format JSON :
     });
 
     if (!response.ok) {
-        throw new Error(`Ollama responded with ${response.status}`);
+      throw new Error(`Ollama responded with ${response.status}`);
     }
 
     const data = await response.json();
     let result;
     try {
-        result = JSON.parse(data.response);
-    } catch(e) {
-        // Fallback or cleanup
-        result = JSON.parse(data.response.replace(/```json/g, '').replace(/```/g, '').trim());
+      result = JSON.parse(data.response);
+    } catch (e) {
+      // Fallback or cleanup
+      result = JSON.parse(data.response.replace(/```json/g, '').replace(/```/g, '').trim());
     }
 
     return NextResponse.json(result);

@@ -25,8 +25,14 @@ export default function AccountingDashboard() {
     const { toast } = useToast();
     
     // State
+    const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
     const [factures, setFactures] = useState<Facture[]>([]);
     const [loading, setLoading] = useState(true);
+    
+    // Saldo Favor & UFV State
+    const [prevMonthSaldo, setPrevMonthSaldo] = useState(0);
+    const [ufvData, setUfvData] = useState({ prev: 0, current: 0 });
+    const [isSavingSaldo, setIsSavingSaldo] = useState(false);
     
     // Import State
     const [csvData, setCsvData] = useState("");
@@ -42,23 +48,31 @@ export default function AccountingDashboard() {
     });
     const [aiSuggestion, setAiSuggestion] = useState<{isDeductible?: boolean, reason?: string, rule?: string, loading: boolean}>({ loading: false });
 
-    // Derived State
-    const totalAchats = factures.filter(f => f.type === 'Achat').reduce((sum, f) => sum + f.montantTotal, 0);
-    const totalVentes = factures.filter(f => f.type === 'Vente').reduce((sum, f) => sum + f.montantTotal, 0);
+    // Derived State - Filtering by selected month
+    const filteredFactures = factures.filter(f => f.date.startsWith(selectedMonth));
     
-    // Exact Bolivian Credit Fiscal Calculation (IVA)
-    const creditFiscal = factures.filter(f => f.type === 'Achat').reduce((sum, f) => {
-        // We use the baseImposable if available (calculated as 70% for fuel or 13% derived for SIAT imports)
-        // If not available, we apply general rule (100% of montant)
+    const totalAchats = filteredFactures.filter(f => f.type === 'Achat').reduce((sum, f) => sum + f.montantTotal, 0);
+    const totalVentes = filteredFactures.filter(f => f.type === 'Vente').reduce((sum, f) => sum + f.montantTotal, 0);
+    
+    // Mantenimiento de Valor calculation
+    const maintenanceValor = (ufvData.prev > 0 && ufvData.current > 0 && prevMonthSaldo > 0) 
+        ? prevMonthSaldo * (ufvData.current / ufvData.prev - 1) 
+        : 0;
+
+    const creditFiscalCurrent = filteredFactures.filter(f => f.type === 'Achat').reduce((sum, f) => {
         const base = f.baseImposable || (f.isFuel ? f.montantTotal * 0.7 : f.montantTotal);
         return sum + (base * 0.13); 
     }, 0);
 
-    const debitFiscal = factures.filter(f => f.type === 'Vente').reduce((sum, f) => {
+    // Total Credit Fiscal = Current + Past + Maintenance
+    const creditFiscalTotal = creditFiscalCurrent + prevMonthSaldo + maintenanceValor;
+
+    const debitFiscal = filteredFactures.filter(f => f.type === 'Vente').reduce((sum, f) => {
         return sum + (f.montantTotal * 0.13);
     }, 0);
 
-    const ivaPayable = Math.max(0, debitFiscal - creditFiscal);
+    const ivaPayable = Math.max(0, debitFiscal - creditFiscalTotal);
+    const nextMonthSaldo = Math.max(0, creditFiscalTotal - debitFiscal);
 
     // Initial Load
     const loadFactures = async () => {
@@ -67,7 +81,18 @@ export default function AccountingDashboard() {
             const res = await fetch(`/api/factures?userId=${user.uid}`);
             if (res.ok) {
                 const data = await res.json();
-                setFactures(data);
+                
+                // Deduplicate items on the client side to avoid UI confusion
+                // If the same invoice (Number, NIT, Date, Amount) exists multiple times, keep only one.
+                const seen = new Set();
+                const uniqueData = data.filter((f: Facture) => {
+                    const key = `${f.type}-${f.nFacture}-${f.nit}-${f.date}-${f.montantTotal}`;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+                
+                setFactures(uniqueData);
             }
         } catch (e) {
             console.error("Failed to load factures", e);
@@ -76,9 +101,65 @@ export default function AccountingDashboard() {
         }
     };
 
+    // Load Saldo Favor from previous month
+    const loadSaldoFavor = async () => {
+        if (!user) return;
+        try {
+            // Get previous month string
+            const date = new Date(selectedMonth + "-01");
+            date.setMonth(date.getMonth() - 1);
+            const prevMonth = date.toISOString().slice(0, 7);
+            
+            const res = await fetch(`/api/saldo-favor?userId=${user.uid}&month=${prevMonth}`);
+            if (res.ok) {
+                const data = await res.json();
+                setPrevMonthSaldo(data.saldo || 0);
+                // Also load current month UFV config if exists
+                const resCurrent = await fetch(`/api/saldo-favor?userId=${user.uid}&month=${selectedMonth}`);
+                if (resCurrent.ok) {
+                    const dataCurrent = await resCurrent.json();
+                    setUfvData({ 
+                        prev: dataCurrent.ufvPrevious || 0, 
+                        current: dataCurrent.ufvCurrent || 0 
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load saldo favor", e);
+        }
+    };
+
     useEffect(() => {
-        if (user) loadFactures();
-    }, [user]);
+        if (user) {
+            loadFactures();
+            loadSaldoFavor();
+        }
+    }, [user, selectedMonth]);
+
+    const handleSaveSaldo = async () => {
+        if (!user) return;
+        setIsSavingSaldo(true);
+        try {
+            const res = await fetch('/api/saldo-favor', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: user.uid,
+                    month: selectedMonth,
+                    saldo: nextMonthSaldo,
+                    ufvPrevious: ufvData.prev,
+                    ufvCurrent: ufvData.current
+                })
+            });
+            if (res.ok) {
+                toast({ title: "Calcul Fiscal Enregistré", description: `Solde de ${nextMonthSaldo.toFixed(2)} Bs reporté.` });
+            }
+        } catch (e) {
+            toast({ variant: "destructive", title: "Erreur", description: "Échec de sauvegarde du solde" });
+        } finally {
+            setIsSavingSaldo(false);
+        }
+    };
 
     const handleManualSubmit = async () => {
         const montant = parseFloat(manualEntry.montant);
@@ -148,8 +229,10 @@ export default function AccountingDashboard() {
                 if (!isNaN(total)) {
                     if (data.rule === "FUEL_70") {
                         setManualEntry(prev => ({ ...prev, isFuel: true, baseImponible: (total * 0.7).toFixed(2) }));
+                        toast({ title: "Règle Carburant appliquée", description: "Base imponible fixée à 70%" });
                     } else if (data.rule === "ELEC_EXEMPT") {
-                        toast({ title: "Facture Électricité", description: "Ajustez la Base Imponible (Total moins taxes municipales)" });
+                        setManualEntry(prev => ({ ...prev, isFuel: false }));
+                        toast({ title: "Facture Électricité", description: "Veuillez soustraire les taxes municipales du montant total." });
                     } else {
                         setManualEntry(prev => ({ ...prev, isFuel: false, baseImponible: total.toString() }));
                     }
@@ -190,8 +273,14 @@ export default function AccountingDashboard() {
                 nit: getIdx(['NIT / CI', 'NIT PROVEEDOR', 'NIT CLIENTE', 'NIT/CI']),
                 nom: getIdx(['NOMBRE O RAZON SOCIAL', 'NOMBRE', 'RAZON SOCIAL', 'NOMBRE O RAZÓN SOCIAL']),
                 total: getIdx(['IMPORTE TOTAL', 'MONTO TOTAL', 'TOTAL DE LA VENTA', 'TOTAL COMPRA']),
-                impot: getIdx(['CREDITO FISCAL', 'DEBITO FISCAL', 'DÉBITO FISCAL', 'CRÉDITO FISCAL']),
+                impot: getIdx(['CREDITO FISCAL', 'DEBITO FISCAL', 'DÉBITO FISCAL', 'CRÉDITO FISCAL', 'IVA']),
             };
+
+            // Fix for cases where Total and Tax headers are too similar
+            if (idx.total === idx.impot && idx.total !== -1) {
+                // Try to find a better index for tax
+                idx.impot = headers.findIndex((h, i) => i > idx.total && (h.includes('FISCAL') || h.includes('IVA')));
+            }
 
             const parsedFactures: Omit<Facture, 'id' | 'createdAt'>[] = [];
             const startLine = idx.date !== -1 ? 1 : 0;
@@ -231,12 +320,16 @@ export default function AccountingDashboard() {
                             isDeductible = aiData.isDeductible;
                             deductibilityReason = aiData.deductibilityReason;
                             isFuel = aiData.rule === "FUEL_70";
+                            if (isFuel) {
+                                baseImposable = montantTotal * 0.7;
+                            }
                         }
                     } catch (e) {}
                 }
 
-                const cleanId = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '');
-                const stableId = `${type.toLowerCase()}-${cleanId(nit)}-${cleanId(nFacture)}`;
+                const cleanId = (str: string) => str ? str.toString().replace(/[^a-zA-Z0-9]/g, '').trim() : '';
+                // Stable ID should include date and amount to avoid collisions of same invoice number used on different occasions
+                const stableId = `${type.toLowerCase()}-${cleanId(nit)}-${cleanId(nFacture)}-${cleanId(date)}-${Math.round(montantTotal)}`;
 
                 parsedFactures.push({
                     id: stableId,
@@ -310,13 +403,66 @@ export default function AccountingDashboard() {
     }
 
     return (
-        <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
-                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                <TabsTrigger value="manual">Saisie Manuelle</TabsTrigger>
-                <TabsTrigger value="import">Import SIAT</TabsTrigger>
-                <TabsTrigger value="liste">Liste</TabsTrigger>
-            </TabsList>
+        <div className="space-y-6">
+            {/* GLOBAL FISCAL CONFIG (Visible on all tabs) */}
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card className="md:col-span-1 shadow-sm border-primary/10">
+                    <CardHeader className="pb-2">
+                         <CardTitle className="text-sm flex items-center gap-2">
+                            Période Fiscale
+                         </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <input 
+                            type="month" 
+                            className="w-full p-2 border rounded font-bold text-primary"
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                        />
+                    </CardContent>
+                </Card>
+
+                <Card className="md:col-span-2 shadow-sm border-primary/10">
+                    <CardHeader className="pb-2">
+                         <CardTitle className="text-sm flex items-center gap-2">
+                            Mise à jour UFV (Mantenimiento de Valor)
+                         </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex gap-4 items-end">
+                        <div className="flex-1 space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase text-primary/70">UFV Fin Mois Précédent</label>
+                            <input 
+                                type="number" step="0.00001"
+                                className="w-full p-2 border rounded text-xs bg-slate-50"
+                                value={ufvData.prev || ''}
+                                onChange={(e) => setUfvData({ ...ufvData, prev: parseFloat(e.target.value) })}
+                                placeholder="ex: 2.34567"
+                            />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase text-primary/70">UFV Fin Mois Actuel</label>
+                            <input 
+                                type="number" step="0.00001"
+                                className="w-full p-2 border rounded text-xs bg-slate-50"
+                                value={ufvData.current || ''}
+                                onChange={(e) => setUfvData({ ...ufvData, current: parseFloat(e.target.value) })}
+                                placeholder="ex: 2.45678"
+                            />
+                        </div>
+                        <Button variant="default" className="bg-primary" size="sm" onClick={handleSaveSaldo} disabled={isSavingSaldo}>
+                            {isSavingSaldo ? <Loader2 className="h-4 w-4 animate-spin" /> : "Calculer & Sauver"}
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Tabs defaultValue="dashboard" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
+                    <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                    <TabsTrigger value="manual">Saisie Manuelle</TabsTrigger>
+                    <TabsTrigger value="import">Import SIAT</TabsTrigger>
+                    <TabsTrigger value="liste">Liste</TabsTrigger>
+                </TabsList>
 
             <TabsContent value="dashboard" className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -342,24 +488,30 @@ export default function AccountingDashboard() {
                     </Card>
                     <Card className="bg-primary/5 backdrop-blur-sm border-primary/20 shadow-sm">
                         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                            <CardTitle className="text-sm font-medium text-primary">TVA à Payer (IVA)</CardTitle>
+                            <CardTitle className="text-sm font-medium text-primary">NET à payer au SIN (IVA)</CardTitle>
                             {ivaPayable > 0 ? <AlertCircle className="w-4 h-4 text-primary" /> : <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
                         </CardHeader>
                         <CardContent>
                             <div className={`text-2xl font-bold ${ivaPayable > 0 ? 'text-primary' : 'text-emerald-600'}`}>{ivaPayable.toLocaleString('es-BO', { minimumFractionDigits: 2 })} Bs</div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                {ivaPayable === 0 ? "Crédit fiscal excédentaire" : "Débit > Crédit"}
+                            <p className="text-xs text-muted-foreground mt-1 text-slate-500">
+                                {ivaPayable === 0 ? "Crédit reportable au mois prochain" : "Montant effectif à payer"}
                             </p>
                         </CardContent>
                     </Card>
                     <Card className="bg-white/50 backdrop-blur-sm shadow-sm">
                         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                            <CardTitle className="text-sm font-medium">Analyse Fiscale</CardTitle>
+                            <CardTitle className="text-sm font-medium">Reporting Fiscal</CardTitle>
                             <Brain className="w-4 h-4 text-purple-500" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{factures.length}</div>
-                            <p className="text-xs text-muted-foreground mt-1 text-purple-600/80">IA : {aiSuggestion.rule === 'GENERAL' ? 'Standard' : 'Spécifique'}</p>
+                            <div className="text-lg font-bold">
+                                {selectedMonth}
+                            </div>
+                            {prevMonthSaldo > 0 && (
+                                <p className="text-[10px] text-emerald-600 font-medium mt-1">
+                                    Report : +{prevMonthSaldo.toFixed(2)} Bs
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -371,17 +523,21 @@ export default function AccountingDashboard() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="text-sm space-y-2">
-                                <div className="flex justify-between p-2 bg-slate-50 rounded">
-                                    <span>Régime Général</span>
-                                    <span className="font-bold">13%</span>
+                                <div className="flex justify-between p-1">
+                                    <span>Crédit Fiscal Mois</span>
+                                    <span>{creditFiscalCurrent.toFixed(2)} Bs</span>
                                 </div>
-                                <div className="flex justify-between p-2 bg-amber-50 rounded">
-                                    <span>Carburant (Essence/Gasoil)</span>
-                                    <span className="font-bold">13% de la base 70%</span>
+                                <div className="flex justify-between p-1 text-emerald-600">
+                                    <span>Crédit Reporté Précédent</span>
+                                    <span>+{prevMonthSaldo.toFixed(2)} Bs</span>
                                 </div>
-                                <div className="flex justify-between p-2 bg-blue-50 rounded">
-                                    <span>Électricité</span>
-                                    <span className="font-bold">13% (Hors taxes municipales)</span>
+                                <div className="flex justify-between p-1 text-emerald-600 border-b pb-2">
+                                    <span>Mantenimiento de Valor (UFV)</span>
+                                    <span>+{maintenanceValor.toFixed(2)} Bs</span>
+                                </div>
+                                <div className="flex justify-between p-2 bg-slate-100 rounded font-bold">
+                                    <span>Crédit Fiscal TOTAL</span>
+                                    <span>{creditFiscalTotal.toFixed(2)} Bs</span>
                                 </div>
                             </div>
                         </CardContent>
@@ -552,7 +708,7 @@ export default function AccountingDashboard() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {factures.map((f) => (
+                                    {filteredFactures.map((f) => (
                                         <TableRow key={f.id} className="text-xs">
                                             <TableCell>
                                                 <div className="flex flex-col">
@@ -571,6 +727,11 @@ export default function AccountingDashboard() {
                                             <TableCell className="text-right font-bold text-emerald-600">{f.creditDebitFiscal.toFixed(2)}</TableCell>
                                         </TableRow>
                                     ))}
+                                    {filteredFactures.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Aucune facture pour cette période.</TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>
