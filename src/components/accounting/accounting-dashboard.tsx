@@ -739,5 +739,6 @@ export default function AccountingDashboard() {
                 </Card>
             </TabsContent>
         </Tabs>
+        </div>
     );
 }
